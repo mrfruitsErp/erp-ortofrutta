@@ -1,0 +1,19 @@
+@echo off
+
+cd C:\xampp\htdocs\gestionale
+
+echo -----------------------------
+echo Reset Laravel Cache
+echo -----------------------------
+
+php artisan optimize:clear
+php artisan view:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan config:clear
+
+echo -----------------------------
+echo Laravel pulito
+echo -----------------------------
+
+pause

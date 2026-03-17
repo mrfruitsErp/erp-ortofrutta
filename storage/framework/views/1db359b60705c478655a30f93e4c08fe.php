@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('page-title','Nuovo Ordine'); ?>
 
-@section('page-title','Nuovo Ordine')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 
 <div class="page-header">
 <div>
@@ -13,7 +11,7 @@
 </div>
 
 <form method="POST" action="/orders">
-@csrf
+<?php echo csrf_field(); ?>
 
 <div class="card" style="margin-bottom:20px">
 
@@ -23,20 +21,21 @@
 
 <option value="">Seleziona cliente</option>
 
-@foreach($clients as $client)
+<?php $__currentLoopData = $clients; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $client): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 
-<option value="{{ $client->id }}">
-{{ $client->company_name }}
+<option value="<?php echo e($client->id); ?>">
+<?php echo e($client->company_name); ?>
+
 </option>
 
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
 </select>
 </div>
 
 <div class="form-group">
 <label>Data ordine</label>
-<input type="date" name="date" value="{{ date('Y-m-d') }}" required>
+<input type="date" name="date" value="<?php echo e(date('Y-m-d')); ?>" required>
 </div>
 
 </div>
@@ -76,19 +75,20 @@ Prodotti ordine
 
 <option value="">Prodotto</option>
 
-@foreach($products as $product)
+<?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 
-<option value="{{ $product->id }}"
-data-origin="{{ $product->origin }}"
-data-weight="{{ $product->avg_box_weight }}"
-data-tara="{{ $product->tara }}"
-data-price="{{ $product->price }}">
+<option value="<?php echo e($product->id); ?>"
+data-origin="<?php echo e($product->origin); ?>"
+data-weight="<?php echo e($product->avg_box_weight); ?>"
+data-tara="<?php echo e($product->tara); ?>"
+data-price="<?php echo e($product->price); ?>">
 
-{{ $product->name }}
+<?php echo e($product->name); ?>
+
 
 </option>
 
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
 </select>
 
@@ -243,4 +243,5 @@ document.getElementById('orderTotal').innerText = total.toFixed(2)
 
 </script>
 
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\gestionale\resources\views/orders/create.blade.php ENDPATH**/ ?>

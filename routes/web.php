@@ -43,136 +43,150 @@ Route::post('/order/{token}', [OrderPublicController::class,'store']);
 */
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->name('dashboard');
+->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
-| ERP ROUTES (PROTETTE)
+| ERP ROUTES PROTETTE
 |--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth'])->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | CLIENTI
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| CLIENTI
+|--------------------------------------------------------------------------
+*/
 
-    Route::resource('clients', ClientController::class);
+Route::resource('clients', ClientController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | FORNITORI
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| FORNITORI
+|--------------------------------------------------------------------------
+*/
 
-    Route::resource('suppliers', SupplierController::class);
+Route::resource('suppliers', SupplierController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | PRODOTTI
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| PRODOTTI
+|--------------------------------------------------------------------------
+*/
 
-    Route::post('/products/massive-update', [ProductController::class, 'massiveUpdate'])
-        ->name('products.massive-update');
+Route::post('/products/massive-update', [ProductController::class, 'massiveUpdate'])
+->name('products.massive-update');
 
-    Route::resource('products', ProductController::class);
+Route::resource('products', ProductController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | DOCUMENTI
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| DOCUMENTI
+|--------------------------------------------------------------------------
+*/
 
-    Route::resource('documents', DocumentController::class);
+Route::resource('documents', DocumentController::class);
 
-    Route::get('/documents/{id}/pdf', [DocumentController::class, 'pdf'])
-        ->name('documents.pdf');
+Route::get('/documents/{id}/pdf', [DocumentController::class, 'pdf'])
+->name('documents.pdf');
 
-    Route::post('/save-real-weight', [DocumentController::class, 'saveRealWeight'])
-        ->name('save.real.weight');
+Route::post('/save-real-weight', [DocumentController::class, 'saveRealWeight'])
+->name('save.real.weight');
 
-    /*
-    |--------------------------------------------------------------------------
-    | ORDINI
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| ORDINI
+|--------------------------------------------------------------------------
+*/
 
-    Route::resource('orders', OrderController::class);
+Route::resource('orders', OrderController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | IMPOSTAZIONI ORDINI
-    |--------------------------------------------------------------------------
-    */
+Route::get('/orders/{id}/confirm',[OrderController::class,'confirmOrder'])
+->name('orders.confirm');
 
-    Route::get('/settings/orders',[SettingsController::class,'orders']);
-    Route::post('/settings/orders',[SettingsController::class,'saveOrders']);
+Route::get('/orders/{id}/generate-document',[OrderController::class,'generateDocument'])
+->name('orders.generateDocument');
 
-    /*
-    |--------------------------------------------------------------------------
-    | LOGISTICA CONSEGNE
-    |--------------------------------------------------------------------------
-    */
+# 🔥 NUOVE ROUTE DDT (AGGIUNTE QUI)
 
-    Route::get('/settings/delivery-zones',[DeliveryZoneController::class,'index']);
-    Route::post('/settings/delivery-zones',[DeliveryZoneController::class,'store']);
-    Route::post('/settings/delivery-zones/{id}',[DeliveryZoneController::class,'update']);
-    Route::delete('/settings/delivery-zones/{id}',[DeliveryZoneController::class,'destroy']);
+Route::get('/documents/{id}/assign-number',[OrderController::class,'assignDdtNumber'])
+->name('documents.assignNumber');
 
-    Route::get('/settings/delivery-slots',[DeliverySlotController::class,'index']);
-    Route::post('/settings/delivery-slots',[DeliverySlotController::class,'store']);
-    Route::post('/settings/delivery-slots/{id}',[DeliverySlotController::class,'update']);
-    Route::delete('/settings/delivery-slots/{id}',[DeliverySlotController::class,'destroy']);
+Route::get('/documents/{id}/cancel',[OrderController::class,'cancelDdt'])
+->name('documents.cancel');
 
-    /*
-    |--------------------------------------------------------------------------
-    | ACQUISTI
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| IMPOSTAZIONI ORDINI
+|--------------------------------------------------------------------------
+*/
 
-    Route::resource('purchases', PurchaseController::class);
+Route::get('/settings/orders',[SettingsController::class,'orders']);
+Route::post('/settings/orders',[SettingsController::class,'saveOrders']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | PAGAMENTI
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| LOGISTICA CONSEGNE
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('/payments', [PaymentController::class, 'index'])
-        ->name('payments.index');
+Route::get('/settings/delivery-zones',[DeliveryZoneController::class,'index']);
+Route::post('/settings/delivery-zones',[DeliveryZoneController::class,'store']);
+Route::post('/settings/delivery-zones/{id}',[DeliveryZoneController::class,'update']);
+Route::delete('/settings/delivery-zones/{id}',[DeliveryZoneController::class,'destroy']);
 
-    Route::post('/payments', [PaymentController::class, 'store'])
-        ->name('payments.store');
+Route::get('/settings/delivery-slots',[DeliverySlotController::class,'index']);
+Route::post('/settings/delivery-slots',[DeliverySlotController::class,'store']);
+Route::post('/settings/delivery-slots/{id}',[DeliverySlotController::class,'update']);
+Route::delete('/settings/delivery-slots/{id}',[DeliverySlotController::class,'destroy']);
 
-    Route::get('/crediti', [PaymentController::class, 'crediti'])
-        ->name('crediti.index');
+/*
+|--------------------------------------------------------------------------
+| ACQUISTI
+|--------------------------------------------------------------------------
+*/
 
-    /*
-    |--------------------------------------------------------------------------
-    | MAGAZZINO — Giacenze
-    |--------------------------------------------------------------------------
-    */
+Route::resource('purchases', PurchaseController::class);
 
-    Route::get('/magazzino', [StockController::class, 'index'])
-        ->name('magazzino.index');
+/*
+|--------------------------------------------------------------------------
+| PAGAMENTI
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('/carico-magazzino', [StockController::class, 'create'])
-        ->name('carico.magazzino');
+Route::get('/payments', [PaymentController::class, 'index'])
+->name('payments.index');
 
-    Route::post('/stock', [StockController::class, 'store'])
-        ->name('stock.store');
+Route::post('/payments', [PaymentController::class, 'store'])
+->name('payments.store');
 
-    /*
-    |--------------------------------------------------------------------------
-    | MAGAZZINO — Movimenti
-    |--------------------------------------------------------------------------
-    */
+Route::get('/crediti', [PaymentController::class, 'crediti'])
+->name('crediti.index');
 
-    Route::get('/movimenti-magazzino', [StockMovementController::class, 'index'])
-        ->name('movimenti.index');
+/*
+|--------------------------------------------------------------------------
+| MAGAZZINO GIACENZE
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/magazzino', [StockController::class, 'index'])
+->name('magazzino.index');
+
+Route::get('/carico-magazzino', [StockController::class, 'create'])
+->name('carico.magazzino');
+
+Route::post('/stock', [StockController::class, 'store'])
+->name('stock.store');
+
+/*
+|--------------------------------------------------------------------------
+| MAGAZZINO MOVIMENTI
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/movimenti-magazzino', [StockMovementController::class, 'index'])
+->name('movimenti.index');
 
 });
 
