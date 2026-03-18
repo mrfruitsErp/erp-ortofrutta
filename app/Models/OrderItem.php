@@ -6,23 +6,38 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
+    protected $fillable = [
+        'order_id',
+        'product_id',
+        'origin',
 
-protected $fillable = [
-'order_id',
-'product_id',
-'qty',
-'price',
-'total'
-];
+        'colli',
+        'peso_collo',
 
-public function product()
-{
-return $this->belongsTo(Product::class);
-}
+        'kg_estimated',
+        'kg_real',
+        'tara',
+        'kg_net',
 
-public function order()
-{
-return $this->belongsTo(Order::class);
-}
+        'qty',        // pezzi reali
+        'price_kg',
+        'price',
+        'total',
+    ];
 
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    // 🔹 CALCOLO PESO NETTO SICURO
+    public function getCalculatedKgNetAttribute()
+    {
+        return max(0, ($this->kg_real ?? 0) - ($this->tara ?? 0));
+    }
 }

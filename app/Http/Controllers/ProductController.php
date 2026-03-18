@@ -5,70 +5,72 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Stock;
-use App\Models\StockMovement;
 
 class ProductController extends Controller
 {
 
-public function index()
-{
-$products = Product::with('stock')->get();
-return view('products.index', compact('products'));
-}
+    public function index()
+    {
+        $products = Product::orderBy('name')->get();
 
-public function create()
-{
-return view('products.create');
-}
+        foreach ($products as $product) {
+            $product->stock = Stock::where('product_id', $product->id)->first();
+        }
 
-public function store(Request $request)
-{
+        return view('products.index', compact('products'));
+    }
 
-$product = new Product();
 
-$product->name           = $request->name;
-$product->origin         = $request->origin;
-$product->unit           = $request->unit;
-$product->tara           = $request->tara;
-$product->avg_box_weight = $request->avg_box_weight;
-$product->price          = $request->price;
-$product->cost_price     = $request->cost_price;
-$product->vat_rate       = $request->vat_rate ?? 4;
+    public function edit($id)
+    {
+        $product = Product::findOrFail($id);
+        $stock   = Stock::where('product_id', $id)->first();
 
-$product->save();
+        return view('products.edit', compact('product', 'stock'));
+    }
 
-return redirect('/products');
 
-}
+    public function update(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
 
-public function edit($id)
-{
+        $product->update([
+            'name'           => $request->name,
+            'origin'         => $request->origin,
+            'unit'           => $request->unit,
+            'sale_type'      => $request->sale_type,
+            'avg_box_weight' => $request->avg_box_weight,
+            'tara'           => $request->tara ?? 0,
+            'pieces_per_box' => $request->pieces_per_box,
+            'price'          => $request->price,
+            'cost_price'     => $request->cost_price,
+            'vat_rate'       => $request->vat_rate ?? 4,
+        ]);
 
-$product = Product::findOrFail($id);
-$stock   = Stock::where('product_id', $id)->first();
+        // Aggiorna stock solo se il campo è stato compilato
+        if ($request->filled('new_stock_qty')) {
 
-return view('products.edit', compact('product','stock'));
+            $stock = Stock::firstOrCreate(
+                ['product_id' => $product->id],
+                ['quantity' => 0]
+            );
 
-}
+            $stock->quantity  = $request->new_stock_qty;
+            $stock->min_stock = $request->min_stock ?? 0;
+            $stock->save();
 
-public function update(Request $request, $id)
-{
+        } elseif ($request->filled('min_stock')) {
 
-$product = Product::findOrFail($id);
+            // Aggiorna solo scorta minima se cambiata
+            $stock = Stock::firstOrCreate(
+                ['product_id' => $product->id],
+                ['quantity' => 0]
+            );
+            $stock->min_stock = $request->min_stock;
+            $stock->save();
+        }
 
-$product->name           = $request->name;
-$product->origin         = $request->origin;
-$product->unit           = $request->unit;
-$product->tara           = $request->tara;
-$product->avg_box_weight = $request->avg_box_weight;
-$product->price          = $request->price;
-$product->cost_price     = $request->cost_price;
-$product->vat_rate       = $request->vat_rate ?? 4;
-
-$product->save();
-
-return redirect('/products')->with('success','Prodotto aggiornato');
-
-}
+        return redirect()->back()->with('success', 'Prodotto aggiornato');
+    }
 
 }

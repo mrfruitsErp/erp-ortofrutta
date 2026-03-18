@@ -5,7 +5,6 @@
 @section('content')
 
 <div class="page-header">
-
     <div>
         <div class="page-title">Ordine {{ $order->number }}</div>
         <div class="page-sub">Cliente: <strong>{{ $order->client->company_name ?? '' }}</strong></div>
@@ -13,87 +12,56 @@
 
     <div style="display:flex;gap:10px;align-items:center">
 
-        <a href="{{ route('orders.index') }}" class="btn btn-secondary">
-            ← Torna agli ordini
-        </a>
+        <a href="{{ route('orders.index') }}" class="btn btn-secondary">← Torna agli ordini</a>
 
         @if($order->status == 'draft')
-
-            <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">
-                ✏️ Modifica
-            </a>
-
-            <a href="{{ route('orders.confirm', $order->id) }}"
-               class="btn btn-primary"
+            <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">✏️ Modifica</a>
+            <a href="{{ route('orders.confirm', $order->id) }}" class="btn btn-primary"
                onclick="return confirm('Confermare l\'ordine {{ $order->number }}?')">
                 ✅ Conferma ordine
             </a>
-
         @endif
 
         @if($order->status == 'confirmed')
-
-            <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">
-                ✏️ Modifica
-            </a>
-
-            <a href="{{ route('orders.generateDocument', $order->id) }}"
-               class="btn btn-success"
+            <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">✏️ Modifica</a>
+            <a href="{{ route('orders.generateDocument', $order->id) }}" class="btn btn-success"
                onclick="return confirm('Generare DDT dall\'ordine {{ $order->number }}?')">
                 📄 Genera DDT
             </a>
-
         @endif
 
         @if($order->status == 'invoiced')
-
-            <span class="btn btn-secondary" style="opacity:0.6;cursor:default">
-                ✔ DDT generato
-            </span>
-
+            <span class="btn btn-secondary" style="opacity:0.6;cursor:default">✔ DDT generato</span>
         @endif
 
     </div>
-
 </div>
 
-
-{{-- ALERT SUCCESS --}}
 @if(session('success'))
-    <div class="alert alert-success" style="margin-bottom:20px">
-        {{ session('success') }}
-    </div>
+    <div class="alert alert-success" style="margin-bottom:20px">{{ session('success') }}</div>
 @endif
 
+@if(session('error'))
+    <div class="alert alert-danger" style="margin-bottom:20px">{{ session('error') }}</div>
+@endif
 
 {{-- INFO ORDINE --}}
 <div class="card" style="margin-bottom:20px">
     <div style="display:flex;gap:40px;flex-wrap:wrap">
-
         <div>
             <strong>Numero ordine</strong><br>
             {{ $order->number }}
         </div>
-
         <div>
             <strong>Data</strong><br>
             {{ \Carbon\Carbon::parse($order->date)->format('d/m/Y') }}
         </div>
-
         @if($order->delivery_date)
         <div>
             <strong>Data consegna</strong><br>
             {{ \Carbon\Carbon::parse($order->delivery_date)->format('d/m/Y') }}
         </div>
         @endif
-
-        @if($order->delivery_slot)
-        <div>
-            <strong>Fascia oraria</strong><br>
-            {{ $order->delivery_slot }}
-        </div>
-        @endif
-
         <div>
             <strong>Stato</strong><br>
             @if($order->status == 'draft')
@@ -106,56 +74,77 @@
                 {{ $order->status }}
             @endif
         </div>
-
     </div>
 </div>
 
-
 {{-- RIGHE ORDINE --}}
 <div class="card">
-
     <table>
         <thead>
             <tr>
                 <th>Prodotto</th>
-                <th>Origine</th>
+                <th style="width:70px;text-align:center">Origine</th>
+                <th style="width:70px;text-align:center">UM</th>
                 <th style="width:80px;text-align:center">Colli</th>
                 <th style="width:100px;text-align:right">Kg stimati</th>
                 <th style="width:100px;text-align:right">Kg reali</th>
                 <th style="width:100px;text-align:right">Kg netti</th>
-                <th style="width:100px;text-align:right">€/kg</th>
+                <th style="width:90px;text-align:right">Prezzo</th>
                 <th style="width:110px;text-align:right">Totale</th>
             </tr>
         </thead>
         <tbody>
         @forelse($order->items as $item)
-            <tr>
-                <td>{{ $item->product->name ?? '—' }}</td>
-                <td>{{ $item->origin ?? '—' }}</td>
-                <td style="text-align:center">{{ $item->qty }}</td>
-                <td style="text-align:right">{{ number_format($item->kg_estimated,2,',','.') }}</td>
-                <td style="text-align:right">{{ $item->kg_real ? number_format($item->kg_real,2,',','.') : '—' }}</td>
-                <td style="text-align:right">{{ number_format($item->kg_net,2,',','.') }}</td>
-                <td style="text-align:right">€ {{ number_format($item->price,2,',','.') }}</td>
-                <td style="text-align:right">€ {{ number_format($item->total,2,',','.') }}</td>
-            </tr>
+        @php
+            $isUnit = ($item->product->sale_type ?? 'kg') === 'unit';
+            $um     = $isUnit ? 'PZ' : 'KG';
+        @endphp
+        <tr>
+            <td>{{ $item->product->name ?? '—' }}</td>
+            <td style="text-align:center">{{ $item->origin ?? $item->product->origin ?? '—' }}</td>
+            <td style="text-align:center;font-weight:600;color:{{ $isUnit ? '#2d6a4f' : '#1a56a0' }}">{{ $um }}</td>
+            <td style="text-align:center">{{ $item->colli ?? '—' }}</td>
+            <td style="text-align:right">
+                @if(!$isUnit)
+                    {{ number_format($item->kg_estimated ?? 0, 2, ',', '.') }}
+                @else —
+                @endif
+            </td>
+            <td style="text-align:right">
+                @if(!$isUnit)
+                    {{ $item->kg_real ? number_format($item->kg_real, 2, ',', '.') : '—' }}
+                @else —
+                @endif
+            </td>
+            <td style="text-align:right">
+                @if(!$isUnit)
+                    {{ number_format($item->kg_net ?? 0, 2, ',', '.') }}
+                @else
+                    {{ number_format($item->qty ?? 0, 0, ',', '.') }} pz
+                @endif
+            </td>
+            <td style="text-align:right">
+                € {{ number_format($item->price_kg ?? $item->price ?? 0, 2, ',', '.') }}
+                <span style="font-size:10px;color:#999">{{ $isUnit ? '/pz' : '/kg' }}</span>
+            </td>
+            <td style="text-align:right;font-weight:700">
+                € {{ number_format($item->total, 2, ',', '.') }}
+            </td>
+        </tr>
         @empty
             <tr>
-                <td colspan="8" style="text-align:center;color:#999;padding:20px">
+                <td colspan="9" style="text-align:center;color:#999;padding:20px">
                     Nessun prodotto in questo ordine
                 </td>
             </tr>
         @endforelse
         </tbody>
     </table>
-
 </div>
 
-
-{{-- TOTALE --}}
-<div class="card" style="margin-top:20px;display:flex;justify-content:flex-end;align-items:center">
+<div class="card" style="margin-top:20px;display:flex;justify-content:flex-end">
     <div style="font-size:20px;font-weight:700">
-        Totale ordine &nbsp; € {{ number_format($order->total,2,',','.') }}
+        Totale ordine &nbsp; € {{ number_format($order->total, 2, ',', '.') }}
     </div>
 </div>
 
