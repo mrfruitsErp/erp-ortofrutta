@@ -83,7 +83,9 @@
                 {{-- TARA: editabile, precompilata dal prodotto ma modificabile --}}
                 <td><input type="number" name="tara_unit[]" step="0.001" style="width:62px" placeholder="0"></td>
 
-                <td><input type="number" name="kg_net[]" step="0.001" readonly style="width:75px;font-weight:600"></td>
+                {{-- KG NETTI: editabile manualmente, ricalcolato automaticamente ma sovrascrivibile --}}
+                <td><input type="number" name="kg_net[]" step="0.001" style="width:75px;font-weight:600" placeholder="auto"></td>
+
                 <td>
                     <input type="number" name="price[]" step="0.01" style="width:72px">
                     <div class="price-lbl" style="font-size:10px;color:#999">€/kg</div>
@@ -156,7 +158,7 @@ document.addEventListener('change', function(e){
 
     row.querySelector('[name="origin[]"]').value    = p.origin;
     row.querySelector('[name="price[]"]').value     = p.price;
-    row.querySelector('[name="tara_unit[]"]').value = p.tara; // precompila dal prodotto
+    row.querySelector('[name="tara_unit[]"]').value = p.tara;
     row.setAttribute('data-sale', p.sale);
 
     const badge = row.querySelector('.um-badge');
@@ -171,8 +173,8 @@ document.addEventListener('change', function(e){
     const lbl = row.querySelector('.price-lbl');
     if(lbl) lbl.textContent = p.sale === 'unit' ? '€/pz' : '€/kg';
 
-    // Reset kg_real quando si cambia prodotto
     row.querySelector('[name="kg_real[]"]').value = '';
+    row.querySelector('[name="kg_net[]"]').value  = '';
 
     calcRow(row);
 });
@@ -182,13 +184,43 @@ document.addEventListener('input', function(e){
     const row = e.target.closest('tr');
     if(!row || !row.closest('#orderRows')) return;
 
-    // Se cambiano i colli → azzera kg_real per ricalcolare
+    // Se l'utente modifica kg_net manualmente, ricalcola solo il totale
+    if(e.target.name === 'kg_net[]'){
+        calcTotaleFromKgNet(row);
+        return;
+    }
+
+    // Se cambiano i colli → azzera kg_real e kg_net per ricalcolare
     if(e.target.name === 'colli[]'){
         row.querySelector('[name="kg_real[]"]').value = '';
+        row.querySelector('[name="kg_net[]"]').value  = '';
     }
 
     calcRow(row);
 });
+
+// ── CALCOLA TOTALE DA KG_NET MANUALE ─────────────────────────────────────
+function calcTotaleFromKgNet(row){
+    const select = row.querySelector('.productSelect');
+    const pid    = select ? select.value : null;
+    if(!pid) return;
+    const p = PRODUCTS[pid];
+    if(!p) return;
+
+    const kgNet = parseFloat(row.querySelector('[name="kg_net[]"]').value) || 0;
+    const price = parseFloat(row.querySelector('[name="price[]"]').value)  || 0;
+
+    let total = 0;
+    if(p.sale === 'unit'){
+        const colli = parseFloat(row.querySelector('[name="colli[]"]').value) || 0;
+        total = (colli * p.pieces) * price;
+    } else {
+        total = kgNet * price;
+    }
+
+    row.querySelector('[name="total[]"]').value = total > 0 ? total.toFixed(2) : '';
+    calcTotal();
+}
 
 // ── CALCOLA RIGA ─────────────────────────────────────────────────────────
 function calcRow(row){
@@ -201,15 +233,12 @@ function calcRow(row){
     const colli = parseFloat(row.querySelector('[name="colli[]"]').value)    || 0;
     const price = parseFloat(row.querySelector('[name="price[]"]').value)    || 0;
 
-    // Tara: usa il valore nel campo (modificabile dall'utente)
     const taraInput = row.querySelector('[name="tara_unit[]"]');
     const tara      = parseFloat(taraInput.value) || 0;
 
-    // Kg stimati = colli × peso cassa
     const kgEst   = colli * p.weight;
     const taraTot = colli * tara;
 
-    // Kg reali: se inseriti usa quelli, altrimenti usa stimati
     const kgRealInput = row.querySelector('[name="kg_real[]"]');
     let   kgReal = parseFloat(kgRealInput.value) || 0;
     if(!kgReal){
@@ -220,19 +249,35 @@ function calcRow(row){
     const kgNet = kgReal - taraTot;
 
     row.querySelector('[name="kg_estimated[]"]').value = kgEst > 0 ? kgEst.toFixed(3) : '';
-    row.querySelector('[name="kg_net[]"]').value       = kgNet !== 0 ? kgNet.toFixed(3) : '';
 
-    // Totale
+    // Imposta kg_net solo se l'utente non lo ha modificato manualmente
+    const kgNetInput = row.querySelector('[name="kg_net[]"]');
+    if(!kgNetInput.dataset.manual){
+        kgNetInput.value = kgNet !== 0 ? kgNet.toFixed(3) : '';
+    }
+
     let total = 0;
     if(p.sale === 'unit'){
         total = (colli * p.pieces) * price;
     } else {
-        total = kgNet * price;
+        const kgNetUsato = parseFloat(kgNetInput.value) || kgNet;
+        total = kgNetUsato * price;
     }
 
     row.querySelector('[name="total[]"]').value = total > 0 ? total.toFixed(2) : '';
     calcTotal();
 }
+
+// Marca kg_net come modificato manualmente
+document.addEventListener('focus', function(e){
+    if(e.target.name === 'kg_net[]') e.target.dataset.manual = '';
+}, true);
+
+document.addEventListener('blur', function(e){
+    if(e.target.name === 'kg_net[]' && e.target.value === ''){
+        delete e.target.dataset.manual;
+    }
+}, true);
 
 function calcTotal(){
     let t = 0;

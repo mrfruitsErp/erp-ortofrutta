@@ -16,12 +16,35 @@ class Client extends Model
         'province',
         'email',
         'phone',
-        'payment_terms'
+        'payment_terms',
+        'referente',
+        'cellulare_referente',
+        'zona_consegna',
+        'giorni_consegna',
+        'giorni_chiusura',
+        'fascia_oraria_inizio',
+        'fascia_oraria_fine',
+        'fido',
+        'note_interne',
+        'stato',
+        'order_token',
+        'modalita_ordine',
+    ];
+
+    protected $casts = [
+        'giorni_consegna' => 'array',
+        'giorni_chiusura' => 'array',
+        'fido'            => 'decimal:2',
     ];
 
     public function documents()
     {
         return $this->hasMany(Document::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 
     public function payments()
@@ -42,5 +65,15 @@ class Client extends Model
     public function getBalanceAttribute()
     {
         return $this->total_documents - $this->total_paid;
+    }
+
+    // Genera token univoco se non esiste
+    public static function generateToken(): string
+    {
+        do {
+            $token = bin2hex(random_bytes(16));
+        } while (self::where('order_token', $token)->exists());
+
+        return $token;
     }
 }

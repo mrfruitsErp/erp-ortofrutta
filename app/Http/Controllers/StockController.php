@@ -12,17 +12,15 @@ class StockController extends Controller
 
     public function index()
     {
-        $products = Product::with('stock')->get();
+        $products = Product::with('stock')->orderBy('name')->get();
         return view('stocks.index', compact('products'));
     }
 
-
     public function create()
     {
-        $products = Product::orderBy('name')->get();
+        $products = Product::with('stock')->orderBy('name')->get();
         return view('stocks.create', compact('products'));
     }
-
 
     public function store(Request $request)
     {
@@ -52,8 +50,40 @@ class StockController extends Controller
             'movement_date' => now()->toDateString(),
         ]);
 
-        return redirect('/magazzino')
-            ->with('success', 'Carico registrato con successo.');
+        return redirect('/carico-magazzino')
+            ->with('success', 'Carico registrato.');
     }
 
+    // ── CARICO MASSIVO ──────────────────────────────────────
+    public function bulkStore(Request $request)
+    {
+        $qtys = $request->input('qty', []);
+        $note = $request->input('note', 'Carico rapido');
+        $count = 0;
+
+        foreach ($qtys as $productId => $qty) {
+            $qty = (float)$qty;
+            if ($qty <= 0) continue;
+
+            $stock = Stock::firstOrCreate(
+                ['product_id' => $productId],
+                ['quantity' => 0, 'min_stock' => 0]
+            );
+            $stock->quantity += $qty;
+            $stock->save();
+
+            StockMovement::create([
+                'product_id'    => $productId,
+                'document_id'   => null,
+                'type'          => 'IN',
+                'qty'           => $qty,
+                'movement_date' => now()->toDateString(),
+            ]);
+
+            $count++;
+        }
+
+        return redirect('/carico-magazzino')
+            ->with('success', $count . ' prodotti caricati in magazzino.');
+    }
 }

@@ -16,44 +16,31 @@ class ClientController extends Controller
         $clients = Client::all();
 
         foreach ($clients as $client) {
-            $documents             = Document::where('client_id', $client->id)->get();
-            $totaleVenduto         = $documents->sum('total');
-            $pagato                = Payment::whereIn('document_id', $documents->pluck('id'))->sum('amount');
+            $documents              = Document::where('client_id', $client->id)->get();
+            $totaleVenduto          = $documents->sum('total');
+            $pagato                 = Payment::whereIn('document_id', $documents->pluck('id'))->sum('amount');
             $client->totale_venduto = $totaleVenduto;
-            $client->pagato        = $pagato;
-            $client->da_incassare  = $totaleVenduto - $pagato;
+            $client->pagato         = $pagato;
+            $client->da_incassare   = $totaleVenduto - $pagato;
         }
 
         return view('clients.index', compact('clients'));
     }
-
 
     public function create()
     {
         return view('clients.create');
     }
 
-
     public function store(Request $request)
     {
-        $client = new Client();
+        $data = $this->extractFields($request);
+        $data['order_token'] = Client::generateToken();
 
-        $client->company_name  = $request->ragione_sociale;
-        $client->vat_number    = $request->partita_iva;
-        $client->fiscal_code   = $request->codice_fiscale;
-        $client->address       = $request->indirizzo;
-        $client->city          = $request->citta;
-        $client->zip           = $request->cap;
-        $client->province      = $request->provincia;
-        $client->phone         = $request->telefono;
-        $client->email         = $request->email;
-        $client->payment_terms = $request->metodo_pagamento;
+        Client::create($data);
 
-        $client->save();
-
-        return redirect('/clients')->with('success', 'Cliente creato con successo.');
+        return redirect('/clients')->with('success', 'Cliente creato.');
     }
-
 
     public function show($id)
     {
@@ -77,51 +64,37 @@ class ClientController extends Controller
         $margin_percent = $revenue > 0 ? ($margin / $revenue) * 100 : 0;
 
         return view('clients.show', compact(
-            'client',
-            'documents',
-            'revenue',
-            'cost',
-            'margin',
-            'margin_percent'
+            'client', 'documents', 'revenue', 'cost', 'margin', 'margin_percent'
         ));
     }
-
 
     public function edit($id)
     {
         $client = Client::findOrFail($id);
+
+        // Genera token se mancante
+        if (!$client->order_token) {
+            $client->order_token = Client::generateToken();
+            $client->save();
+        }
+
         return view('clients.edit', compact('client'));
     }
-
 
     public function update(Request $request, $id)
     {
         $client = Client::findOrFail($id);
+        $client->update($this->extractFields($request));
 
-        $client->company_name  = $request->ragione_sociale;
-        $client->vat_number    = $request->partita_iva;
-        $client->fiscal_code   = $request->codice_fiscale;
-        $client->address       = $request->indirizzo;
-        $client->city          = $request->citta;
-        $client->zip           = $request->cap;
-        $client->province      = $request->provincia;
-        $client->phone         = $request->telefono;
-        $client->email         = $request->email;
-        $client->payment_terms = $request->metodo_pagamento;
-
-        $client->save();
-
-        return redirect('/clients')->with('success', 'Cliente aggiornato.');
+        return redirect()->route('clients.show', $id)
+            ->with('success', 'Cliente aggiornato.');
     }
-
 
     public function destroy($id)
     {
-        $client = Client::findOrFail($id);
-        $client->delete();
+        Client::findOrFail($id)->delete();
         return redirect('/clients')->with('success', 'Cliente eliminato.');
     }
-
 
     public function report()
     {
@@ -160,4 +133,31 @@ class ClientController extends Controller
         return view('reports.clients', ['clients' => $data]);
     }
 
+    // ── HELPER PRIVATO ──────────────────────────────────────
+    private function extractFields(Request $request): array
+    {
+        return [
+            'company_name'         => $request->company_name,
+            'vat_number'           => $request->vat_number,
+            'fiscal_code'          => $request->fiscal_code,
+            'address'              => $request->address,
+            'city'                 => $request->city,
+            'zip'                  => $request->zip,
+            'province'             => $request->province,
+            'phone'                => $request->phone,
+            'email'                => $request->email,
+            'payment_terms'        => $request->payment_terms,
+            'referente'            => $request->referente,
+            'cellulare_referente'  => $request->cellulare_referente,
+            'zona_consegna'        => $request->zona_consegna,
+            'giorni_consegna'      => $request->giorni_consegna ?? [],
+            'giorni_chiusura'      => $request->giorni_chiusura ?? [],
+            'fascia_oraria_inizio' => $request->fascia_oraria_inizio,
+            'fascia_oraria_fine'   => $request->fascia_oraria_fine,
+            'fido'                 => $request->fido ?? 0,
+            'note_interne'         => $request->note_interne,
+            'stato'                => $request->stato ?? 'attivo',
+            'modalita_ordine'      => $request->modalita_ordine ?? 'colli',
+        ];
+    }
 }

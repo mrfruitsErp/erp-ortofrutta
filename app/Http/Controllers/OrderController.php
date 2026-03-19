@@ -7,6 +7,10 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Client;
 use App\Models\Product;
+use App\Models\Document;
+use App\Models\DocumentRow;
+use App\Models\Stock;
+use App\Models\StockMovement;
 
 class OrderController extends Controller
 {
@@ -88,9 +92,10 @@ class OrderController extends Controller
             'notes'     => $request->notes,
         ]);
 
-        // Cancella le righe esistenti e le ricrea
         $order->items()->delete();
+
         $total = $this->saveItems($order->id, $request);
+
         $order->update(['total' => $total]);
 
         return redirect()->route('orders.show', $order->id)
@@ -99,14 +104,107 @@ class OrderController extends Controller
 
     public function destroy(Order $order)
     {
-        $number = $order->number;
         $order->items()->delete();
         $order->delete();
 
         return redirect()->route('orders.index')
-            ->with('success', 'Ordine ' . $number . ' eliminato.');
+            ->with('success', 'Ordine eliminato.');
     }
 
+    public function confirmOrder(Order $order)
+    {
+        if (!in_array($order->status, ['draft', 'web'])) {
+            return redirect()->back()->with('error', 'L\'ordine non può essere confermato.');
+        }
+
+        $order->update(['status' => 'confirmed']);
+
+        return redirect()->route('orders.show', $order->id)
+            ->with('success', 'Ordine ' . $order->number . ' confermato.');
+    }
+
+    public function generateDocument(Order $order)
+    {
+        if ($order->status !== 'confirmed') {
+            return redirect()->back()->with('error', 'Solo gli ordini confermati possono generare un DDT.');
+        }
+
+        $order->load(['items.product', 'client']);
+
+        // Numero DDT progressivo
+        $year = date('Y');
+        $last = Document::whereYear('date', $year)->orderBy('id', 'desc')->first();
+
+        if ($last) {
+            $lastNum = intval(substr($last->number, -4));
+            $newNum  = $lastNum + 1;
+        } else {
+            $newNum = 1;
+        }
+
+        $ddtNumber = 'DDT-' . $year . '-' . str_pad($newNum, 4, '0', STR_PAD_LEFT);
+
+        // Crea documento DDT
+        $document = Document::create([
+            'type'      => 'DDT',
+            'number'    => $ddtNumber,
+            'date'      => $order->date,
+            'client_id' => $order->client_id,
+            'order_id'  => $order->id,
+            'total'     => 0,
+        ]);
+
+        $totalDocument = 0;
+
+        foreach ($order->items as $item) {
+            $product  = $item->product;
+            $vatRate  = $product->vat_rate ?? 4;
+            $kgNet    = $item->kg_net ?? 0;
+            $price    = $item->price_kg ?? $item->price ?? 0;
+            $rowTotal = $kgNet * $price;
+
+            DocumentRow::create([
+                'document_id'  => $document->id,
+                'product_id'   => $item->product_id,
+                'boxes'        => $item->colli,
+                'kg_estimated' => $item->kg_estimated,
+                'kg_real'      => $item->kg_real,
+                'price_per_kg' => $price,
+                'vat_rate'     => $vatRate,
+                'total'        => $rowTotal,
+            ]);
+
+            // Scarico magazzino
+            $stock = Stock::where('product_id', $item->product_id)->first();
+            if ($stock) {
+                $stock->quantity -= $kgNet;
+                $stock->save();
+            }
+
+            // Movimento magazzino
+            StockMovement::create([
+                'product_id'    => $item->product_id,
+                'document_id'   => $document->id,
+                'type'          => 'OUT',
+                'qty'           => $kgNet,
+                'movement_date' => date('Y-m-d'),
+            ]);
+
+            $totalDocument += $rowTotal;
+        }
+
+        $document->update(['total' => $totalDocument]);
+
+        // Segna ordine come evaso
+        $order->update(['status' => 'invoiced']);
+
+        return redirect()->route('documents.show', $document->id)
+            ->with('success', 'DDT ' . $ddtNumber . ' generato dall\'ordine ' . $order->number . '.');
+    }
+
+    // -------------------------------------------------------
+    // LOGICA RIGHE
+    // -------------------------------------------------------
     private function saveItems($orderId, Request $request): float
     {
         $total = 0;
@@ -118,11 +216,11 @@ class OrderController extends Controller
             $product = Product::find($productId);
             if (!$product) continue;
 
-            $isUnit   = ($product->sale_type === 'unit');
-            $colli    = max(1, (float)($request->colli[$index] ?? 1));
-            $origin   = $request->origin[$index] ?? $product->origin;
-            $price    = (float)($request->price[$index] ?? $product->price ?? 0);
-            $kgReal   = (float)($request->kg_real[$index] ?? 0) ?: null;
+            $isUnit    = ($product->sale_type === 'unit');
+            $colli     = max(1, (float)($request->colli[$index] ?? 1));
+            $origin    = $request->origin[$index] ?? $product->origin;
+            $price     = (float)($request->price[$index] ?? $product->price ?? 0);
+            $kgReal    = (float)($request->kg_real[$index] ?? 0) ?: null;
 
             $pesoCassa = (float)($product->avg_box_weight ?? 0);
             $taraUnit  = (float)($product->tara ?? 0);

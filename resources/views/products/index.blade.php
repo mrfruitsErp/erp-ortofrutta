@@ -128,8 +128,11 @@
             <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px" data-val="{{ $cost }}">
                 € {{ number_format($cost, 2, ',', '.') }}
             </td>
-            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px;font-weight:700" data-val="{{ $price }}">
-                € {{ number_format($price, 2, ',', '.') }}
+            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer"
+                data-val="{{ $price }}"
+                title="Clicca per modificare il prezzo"
+                onclick="startEditPrice(this, {{ $product->id }})">
+                <span class="price-display">€ {{ number_format($price, 2, ',', '.') }}</span>
             </td>
             <td style="text-align:right" data-val="{{ $margin }}">
                 <span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;
@@ -138,8 +141,11 @@
                     {{ number_format($margin, 1, ',', '.') }}%
                 </span>
             </td>
-            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px" data-val="{{ $stock_qty }}">
-                {{ number_format($stock_qty, 2, ',', '.') }} {{ $product->unit ?? 'kg' }}
+            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer"
+                data-val="{{ $stock_qty }}"
+                title="Clicca per modificare lo stock"
+                onclick="startEditStock(this, {{ $product->id }})">
+                <span class="stock-display">{{ number_format($stock_qty, 2, ',', '.') }} kg</span>
             </td>
             <td style="text-align:center">
                 @if($stato == 'esaurito')
@@ -342,6 +348,152 @@ document.getElementById('filterUM').addEventListener('change', filterRows);
 document.getElementById('filterStato').addEventListener('change', filterRows);
 
 filterRows();
+
+// ─── EDITING INLINE STOCK ────────────────────────────────
+function startEditStock(cell, productId) {
+    if (cell.querySelector('input')) return;
+
+    const currentVal = parseFloat(cell.dataset.val) || 0;
+    const display    = cell.querySelector('.stock-display');
+    display.style.display = 'none';
+
+    const input = document.createElement('input');
+    input.type  = 'number';
+    input.step  = '0.001';
+    input.value = currentVal.toFixed(3);
+    input.style.cssText = 'width:90px;text-align:right;margin:0;font-size:13px;font-family:inherit';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+
+    function saveStock() {
+        const newVal = parseFloat(input.value);
+        if (isNaN(newVal) || newVal < 0) { cancelEdit(); return; }
+        if (newVal === currentVal)        { cancelEdit(); return; }
+
+        cell.style.opacity = '0.5';
+
+        fetch('/products/massive-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ ids: [String(productId)], action: 'stock_set', value: newVal })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                cell.dataset.val = newVal;
+                display.textContent = newVal.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' kg';
+
+                // Aggiorna stato riga
+                const row = cell.closest('tr');
+                row.dataset.stock = newVal;
+                const statoCell = row.querySelector('[data-stato]') || row.cells[10];
+                if (newVal <= 0) {
+                    row.dataset.stato = 'esaurito';
+                } else {
+                    const price = parseFloat(row.dataset.price) || 0;
+                    const cost  = parseFloat(row.dataset.cost)  || 0;
+                    row.dataset.stato = price < cost ? 'sottocosto' : 'ok';
+                }
+
+                cell.style.opacity  = '1';
+                cell.style.background = '#d4edda';
+                setTimeout(() => location.reload(), 600);
+            } else {
+                alert('Errore nel salvataggio');
+            }
+            cancelEdit();
+        })
+        .catch(() => { alert('Errore di rete'); cancelEdit(); });
+    }
+
+    function cancelEdit() {
+        if (input.parentNode) input.remove();
+        display.style.display = '';
+        cell.style.opacity = '1';
+    }
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter')  { e.preventDefault(); saveStock(); }
+        if (e.key === 'Escape') { cancelEdit(); }
+    });
+    input.addEventListener('blur', saveStock);
+}
+
+// ─── EDITING INLINE PREZZO ───────────────────────────────
+function startEditPrice(cell, productId) {
+    if (cell.querySelector('input')) return; // già in edit
+
+    const currentVal = parseFloat(cell.dataset.val) || 0;
+    const display    = cell.querySelector('.price-display');
+    display.style.display = 'none';
+
+    const input = document.createElement('input');
+    input.type  = 'number';
+    input.step  = '0.01';
+    input.value = currentVal.toFixed(2);
+    input.style.cssText = 'width:80px;text-align:right;margin:0;font-size:13px;font-weight:700;font-family:inherit';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+
+    function savePrice() {
+        const newVal = parseFloat(input.value);
+        if (isNaN(newVal) || newVal < 0) { cancelEdit(); return; }
+        if (newVal === currentVal) { cancelEdit(); return; }
+
+        cell.style.opacity = '0.5';
+
+        fetch('/products/massive-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ ids: [String(productId)], action: 'price_set', value: newVal })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                cell.dataset.val = newVal;
+                display.textContent = '€ ' + newVal.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+                // Aggiorna margine nella stessa riga
+                const row  = cell.closest('tr');
+                const cost = parseFloat(row.dataset.cost) || 0;
+                const margin = newVal > 0 ? ((newVal - cost) / newVal) * 100 : 0;
+                const marginCell = row.querySelector('[data-val]~td [data-val]') || row.cells[8];
+                if (marginCell) {
+                    marginCell.dataset.val = margin;
+                    const span = marginCell.querySelector('span');
+                    if (span) {
+                        span.textContent = margin.toLocaleString('it-IT', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%';
+                        span.style.background = margin >= 15 ? 'var(--green-xl)' : '#fde8e8';
+                        span.style.color      = margin >= 15 ? 'var(--green)'   : '#c0392b';
+                    }
+                }
+
+                row.dataset.price = newVal;
+                cell.style.opacity = '1';
+                cell.style.background = '#d4edda';
+                setTimeout(() => cell.style.background = '', 1000);
+            } else {
+                alert('Errore nel salvataggio');
+            }
+            cancelEdit();
+        })
+        .catch(() => { alert('Errore di rete'); cancelEdit(); });
+    }
+
+    function cancelEdit() {
+        if (input.parentNode) input.remove();
+        display.style.display = '';
+        cell.style.opacity = '1';
+    }
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter')  { e.preventDefault(); savePrice(); }
+        if (e.key === 'Escape') { cancelEdit(); }
+    });
+    input.addEventListener('blur', savePrice);
+}
 </script>
 
 @endsection

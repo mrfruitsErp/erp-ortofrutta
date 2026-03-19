@@ -12,13 +12,18 @@ class Product extends Model
         'origin',
         'unit',
         'tara',
-        'avg_box_weight',     // peso medio cassa
-        'avg_unit_weight',    // peso medio pezzo
-        'pieces_per_box',     // pezzi per cassa
+        'avg_box_weight',
+        'avg_unit_weight',
+        'pieces_per_box',
         'price',
-        'cost',
+        'cost_price',
         'vat_rate',
-        'sale_type'
+        'sale_type',
+        'min_margin',
+        'category',
+        'disponibilita',
+        'ordine_step',
+        'ordine_min',
     ];
 
     public function stock()

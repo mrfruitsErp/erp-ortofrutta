@@ -232,7 +232,7 @@ tbody tr:nth-child(even) { background: #f8fbf8; }
 
         @php
             $totImponibile = 0;
-            $totIva        = 0;
+            $ivaPerAliquota = []; // [ '4' => 6.00, '5' => 2.50, ... ]
         @endphp
 
         @foreach($rows as $row)
@@ -257,10 +257,18 @@ tbody tr:nth-child(even) { background: #f8fbf8; }
 
             $price   = $row->price_per_kg;
             $importo = $row->total;
-            $vatRate = $row->vat_rate ?? $product->vat_rate ?? 4;
+
+            // Leggi aliquota dalla riga DDT, fallback al prodotto, fallback a 4
+            $vatRate = (float)($row->vat_rate ?? $product->vat_rate ?? 4);
+            $vatKey  = number_format($vatRate, 0); // es. "4", "5", "10"
 
             $totImponibile += $importo;
-            $totIva        += $importo * ($vatRate / 100);
+
+            // Accumula IVA per aliquota
+            if (!isset($ivaPerAliquota[$vatKey])) {
+                $ivaPerAliquota[$vatKey] = 0;
+            }
+            $ivaPerAliquota[$vatKey] += $importo * ($vatRate / 100);
         @endphp
 
         <tr>
@@ -298,7 +306,12 @@ tbody tr:nth-child(even) { background: #f8fbf8; }
         </tbody>
     </table>
 
-    {{-- ── TOTALI (IVA solo qui, non in colonna) ── --}}
+    {{-- ── TOTALI con IVA raggruppata per aliquota ── --}}
+    @php
+        $totIvaTotale = array_sum($ivaPerAliquota);
+        ksort($ivaPerAliquota);
+    @endphp
+
     <div class="totali-wrap">
         <div class="totali-box">
 
@@ -307,14 +320,16 @@ tbody tr:nth-child(even) { background: #f8fbf8; }
                 <span>€ {{ number_format($totImponibile, 2, ',', '.') }}</span>
             </div>
 
+            @foreach($ivaPerAliquota as $aliquota => $importoIva)
             <div class="tot-row">
-                <span>IVA 4%</span>
-                <span>€ {{ number_format($totIva, 2, ',', '.') }}</span>
+                <span>IVA {{ $aliquota }}%</span>
+                <span>€ {{ number_format($importoIva, 2, ',', '.') }}</span>
             </div>
+            @endforeach
 
             <div class="tot-row final">
                 <span>TOTALE</span>
-                <span>€ {{ number_format($totImponibile + $totIva, 2, ',', '.') }}</span>
+                <span>€ {{ number_format($totImponibile + $totIvaTotale, 2, ',', '.') }}</span>
             </div>
 
         </div>
