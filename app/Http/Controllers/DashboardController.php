@@ -61,7 +61,8 @@ class DashboardController extends Controller
 
         $monthNames = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
-        $salesData = Document::selectRaw('MONTH(date) as month, SUM(total) as total')
+        // 🔥 FIX POSTGRESQL (al posto di MONTH)
+        $salesData = Document::selectRaw('EXTRACT(MONTH FROM date) as month, SUM(total) as total')
             ->where('date', '>=', now()->subMonths(6)->startOfMonth())
             ->groupBy('month')
             ->orderBy('month')
