@@ -1,215 +1,167 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ordine {{ $order->number }}</title>
-<style>
-* { box-sizing:border-box; margin:0; padding:0 }
+@extends('layouts.app')
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #f0f4f1;
-    color: #1b2d27;
-    padding-bottom: 40px;
-}
+@section('page-title','Dettaglio Ordine')
 
-.header {
-    background: #2d6a4f;
-    color: white;
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+@section('content')
 
-.header-title { font-size: 15px; font-weight: 700; }
-.header-sub   { font-size: 12px; opacity: 0.8; margin-top: 2px; }
-
-.back-btn {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 13px;
-    text-decoration: none;
-    font-family: inherit;
-}
-
-.container { max-width: 700px; margin: 0 auto; padding: 16px; }
-
-.card {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-}
-
-.card-title {
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #7a9e8e;
-    letter-spacing: 0.5px;
-    margin-bottom: 12px;
-}
-
-.meta-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-
-.meta-item label {
-    font-size: 11px;
-    color: #999;
-    display: block;
-    margin-bottom: 3px;
-    text-transform: uppercase;
-}
-
-.meta-item span {
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.status-badge {
-    display: inline-block;
-    padding: 3px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.product-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 10px;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #f0f4f1;
-}
-
-.product-row:last-child { border-bottom: none; }
-
-.product-name  { font-weight: 600; font-size: 14px; }
-.product-detail { font-size: 12px; color: #7a9e8e; margin-top: 2px; }
-
-.product-qty   { text-align: right; font-size: 13px; color: #555; white-space: nowrap; }
-.product-total { text-align: right; font-weight: 700; font-size: 14px; font-family: monospace; white-space: nowrap; }
-
-.total-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    font-size: 16px;
-    font-weight: 700;
-    border-top: 2px solid #2d6a4f;
-    margin-top: 8px;
-    color: #2d6a4f;
-}
-
-@media(max-width:480px){
-    .meta-grid { grid-template-columns: 1fr; }
-}
-</style>
-</head>
-
-<body>
-
-<div class="header">
+<div class="page-header">
     <div>
-        <div class="header-title">{{ $order->number }}</div>
-        <div class="header-sub">{{ $client->company_name }}</div>
+        <div class="page-title">Ordine {{ $order->number }}</div>
+        <div class="page-sub">Cliente: <strong>{{ $order->client->company_name ?? '' }}</strong></div>
     </div>
-    <a href="/order/{{ $client->order_token }}" class="back-btn">← Torna agli ordini</a>
+
+    <div style="display:flex;gap:10px;align-items:center">
+
+        <a href="{{ route('orders.index') }}" class="btn btn-secondary">← Torna agli ordini</a>
+
+        @if($order->status == 'draft')
+            <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">✏️ Modifica</a>
+            <a href="{{ route('orders.confirm', $order->id) }}" class="btn btn-primary"
+               onclick="return confirm('Confermare l\'ordine {{ $order->number }}?')">
+                ✅ Conferma ordine
+            </a>
+        @endif
+
+        @if($order->status == 'web')
+            <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">✏️ Modifica</a>
+            <a href="{{ route('orders.confirm', $order->id) }}" class="btn btn-primary"
+               onclick="return confirm('Confermare l\'ordine {{ $order->number }}?')">
+                ✅ Accetta e Conferma
+            </a>
+        @endif
+
+        @if($order->status == 'confirmed')
+            <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-warning">✏️ Modifica</a>
+            <a href="{{ route('orders.generateDocument', $order->id) }}" class="btn btn-success"
+               onclick="return confirm('Generare DDT dall\'ordine {{ $order->number }}?')">
+                📄 Genera DDT
+            </a>
+        @endif
+
+        @if($order->status == 'invoiced')
+            <span class="btn btn-secondary" style="opacity:0.6;cursor:default">✔ DDT generato</span>
+        @endif
+
+    </div>
 </div>
 
-<div class="container">
+@if(session('success'))
+    <div class="alert alert-success" style="margin-bottom:20px">{{ session('success') }}</div>
+@endif
 
-    {{-- INFO ORDINE --}}
-    <div class="card">
-        <div class="card-title">📋 Dettaglio ordine</div>
-        <div class="meta-grid">
-            <div class="meta-item">
-                <label>Numero</label>
-                <span>{{ $order->number }}</span>
-            </div>
-            <div class="meta-item">
-                <label>Data</label>
-                <span>{{ \Carbon\Carbon::parse($order->date)->format('d/m/Y') }}</span>
-            </div>
-            @if($order->delivery_date)
-            <div class="meta-item">
-                <label>Data consegna</label>
-                <span>{{ \Carbon\Carbon::parse($order->delivery_date)->format('d/m/Y') }}</span>
-            </div>
+@if(session('error'))
+    <div class="alert alert-danger" style="margin-bottom:20px">{{ session('error') }}</div>
+@endif
+
+{{-- INFO ORDINE --}}
+<div class="card" style="margin-bottom:20px">
+    <div style="display:flex;gap:40px;flex-wrap:wrap">
+        <div>
+            <strong>Numero ordine</strong><br>
+            {{ $order->number }}
+        </div>
+        <div>
+            <strong>Data</strong><br>
+            {{ \Carbon\Carbon::parse($order->date)->format('d/m/Y') }}
+        </div>
+        @if($order->delivery_date)
+        <div>
+            <strong>Data consegna</strong><br>
+            {{ \Carbon\Carbon::parse($order->delivery_date)->format('d/m/Y') }}
+        </div>
+        @endif
+        @if($order->delivery_slot)
+        <div>
+            <strong>Fascia oraria</strong><br>
+            {{ $order->delivery_slot }}
+        </div>
+        @endif
+        <div>
+            <strong>Stato</strong><br>
+            @if($order->status == 'draft')
+                <span style="color:#f59e0b;font-weight:600">● Bozza</span>
+            @elseif($order->status == 'web')
+                <span style="color:#8b5cf6;font-weight:600">● Ricevuto dal web</span>
+            @elseif($order->status == 'confirmed')
+                <span style="color:#3b82f6;font-weight:600">● Confermato</span>
+            @elseif($order->status == 'invoiced')
+                <span style="color:#10b981;font-weight:600">● Evaso</span>
+            @else
+                {{ $order->status }}
             @endif
-            @if($order->delivery_slot)
-            <div class="meta-item">
-                <label>Fascia oraria</label>
-                <span>{{ $order->delivery_slot }}</span>
-            </div>
-            @endif
-            <div class="meta-item">
-                <label>Stato</label>
-                @php
-                    $stati = [
-                        'draft'     => ['label' => 'In attesa',    'bg' => '#fff3e0', 'color' => '#e65100'],
-                        'web'       => ['label' => 'Ricevuto',     'bg' => '#ede9fe', 'color' => '#7c3aed'],
-                        'confirmed' => ['label' => 'Confermato',   'bg' => '#e3f0ff', 'color' => '#1a56a0'],
-                        'invoiced'  => ['label' => 'Evaso',        'bg' => '#d4edda', 'color' => '#2d6a4f'],
-                    ];
-                    $s = $stati[$order->status] ?? ['label' => $order->status, 'bg' => '#f3f4f6', 'color' => '#555'];
-                @endphp
-                <span class="status-badge" style="background:{{ $s['bg'] }};color:{{ $s['color'] }}">
-                    {{ $s['label'] }}
-                </span>
-            </div>
         </div>
     </div>
+</div>
 
-    {{-- PRODOTTI --}}
-    <div class="card">
-        <div class="card-title">🛒 Prodotti ordinati</div>
-
-        @foreach($order->items as $item)
+{{-- RIGHE ORDINE --}}
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Prodotto</th>
+                <th style="width:70px;text-align:center">Origine</th>
+                <th style="width:70px;text-align:center">UM</th>
+                <th style="width:80px;text-align:center">Colli</th>
+                <th style="width:100px;text-align:right">Kg stimati</th>
+                <th style="width:100px;text-align:right">Kg reali</th>
+                <th style="width:100px;text-align:right">Kg netti</th>
+                <th style="width:90px;text-align:right">Prezzo</th>
+                <th style="width:110px;text-align:right">Totale</th>
+            </tr>
+        </thead>
+        <tbody>
+        @forelse($order->items as $item)
         @php
             $isUnit = ($item->product->sale_type ?? 'kg') === 'unit';
+            $um     = $isUnit ? 'PZ' : 'KG';
         @endphp
-        <div class="product-row">
-            <div>
-                <div class="product-name">{{ $item->product->name ?? '—' }}</div>
-                <div class="product-detail">
-                    {{ $item->origin ?? $item->product->origin ?? '' }}
-                    @if(!$isUnit)
-                        · {{ number_format($item->kg_net ?? 0, 2, ',', '.') }} kg netti
-                    @endif
-                </div>
-            </div>
-            <div class="product-qty">
-                @if($isUnit)
-                    {{ number_format($item->qty ?? 0, 0, ',', '.') }} pz
-                @else
-                    {{ $item->colli }} colli
+        <tr>
+            <td>{{ $item->product->name ?? '—' }}</td>
+            <td style="text-align:center">{{ $item->origin ?? $item->product->origin ?? '—' }}</td>
+            <td style="text-align:center;font-weight:600;color:{{ $isUnit ? '#2d6a4f' : '#1a56a0' }}">{{ $um }}</td>
+            <td style="text-align:center">{{ $item->colli ?? '—' }}</td>
+            <td style="text-align:right">
+                @if(!$isUnit)
+                    {{ number_format($item->kg_estimated ?? 0, 2, ',', '.') }}
+                @else —
                 @endif
-            </div>
-            <div class="product-total">
+            </td>
+            <td style="text-align:right">
+                @if(!$isUnit)
+                    {{ $item->kg_real ? number_format($item->kg_real, 2, ',', '.') : '—' }}
+                @else —
+                @endif
+            </td>
+            <td style="text-align:right">
+                @if(!$isUnit)
+                    {{ number_format($item->kg_net ?? 0, 2, ',', '.') }}
+                @else
+                    {{ number_format($item->qty ?? 0, 0, ',', '.') }} pz
+                @endif
+            </td>
+            <td style="text-align:right">
+                € {{ number_format($item->price_kg ?? $item->price ?? 0, 2, ',', '.') }}
+                <span style="font-size:10px;color:#999">{{ $isUnit ? '/pz' : '/kg' }}</span>
+            </td>
+            <td style="text-align:right;font-weight:700">
                 € {{ number_format($item->total, 2, ',', '.') }}
-            </div>
-        </div>
-        @endforeach
-
-        <div class="total-row">
-            <span>Totale ordine</span>
-            <span>€ {{ number_format($order->total, 2, ',', '.') }}</span>
-        </div>
-    </div>
-
+            </td>
+        </tr>
+        @empty
+            <tr>
+                <td colspan="9" style="text-align:center;color:#999;padding:20px">
+                    Nessun prodotto in questo ordine
+                </td>
+            </tr>
+        @endforelse
+        </tbody>
+    </table>
 </div>
 
-</body>
-</html>
+<div class="card" style="margin-top:20px;display:flex;justify-content:flex-end">
+    <div style="font-size:20px;font-weight:700">
+        Totale ordine &nbsp; € {{ number_format($order->total, 2, ',', '.') }}
+    </div>
+</div>
+
+@endsection

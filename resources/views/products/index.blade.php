@@ -49,6 +49,12 @@
                 <option value="{{ $orig }}">{{ $orig }}</option>
             @endforeach
         </select>
+        <select id="filterCategoria" style="max-width:160px;margin:0">
+            <option value="">Tutte le categorie</option>
+            @foreach(['Frutta','Verdura','Erbe Aromatiche','Funghi','Frutta Secca','Legumi Secchi','Insalata 4a Gamma'] as $cat)
+                <option value="{{ strtolower($cat) }}">{{ $cat }}</option>
+            @endforeach
+        </select>
         <select id="filterUM" style="max-width:100px;margin:0">
             <option value="">Tutte UM</option>
             @foreach($products->pluck('unit')->unique()->filter()->sort() as $um)
@@ -61,6 +67,12 @@
             <option value="esaurito">⚠ Esaurito</option>
             <option value="sottocosto">⚠ Sotto costo</option>
         </select>
+        <select id="filterDisp" style="max-width:160px;margin:0">
+            <option value="">Tutte le disponibilità</option>
+            <option value="disponibile">✅ Disponibile</option>
+            <option value="su_richiesta">🔶 Su richiesta</option>
+            <option value="non_disponibile">❌ Non disponibile</option>
+        </select>
         <button onclick="resetFiltri()" class="btn btn-secondary" style="padding:7px 14px;font-size:13px">✕ Reset</button>
         <span id="countLabel" style="font-size:12px;color:var(--muted);margin-left:auto"></span>
     </div>
@@ -72,7 +84,9 @@
                     <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
                 </th>
                 <th style="cursor:pointer" onclick="sortTable(1)">Nome ↕</th>
-                <th style="cursor:pointer" onclick="sortTable(2)">Origine ↕</th>
+                <th style="text-align:center;width:75px">SKU</th>
+                <th style="width:110px">Categoria</th>
+                <th style="cursor:pointer" onclick="sortTable(4)">Origine ↕</th>
                 <th>UM</th>
                 <th style="text-align:right;cursor:pointer" onclick="sortTable(4)">Tara ↕</th>
                 <th style="text-align:right;cursor:pointer" onclick="sortTable(5)">Peso Cassa ↕</th>
@@ -81,6 +95,8 @@
                 <th style="text-align:right;cursor:pointer" onclick="sortTable(8)">Margine ↕</th>
                 <th style="text-align:right;cursor:pointer" onclick="sortTable(9)">Stock ↕</th>
                 <th style="text-align:center">Stato</th>
+                <th style="text-align:center;width:90px">Disponib.</th>
+                <th style="text-align:center;width:80px">Modalità</th>
                 <th style="text-align:center;width:100px">Azioni</th>
             </tr>
         </thead>
@@ -95,6 +111,16 @@
             if ($stock_qty <= 0) $stato = 'esaurito';
             elseif ($price < $cost) $stato = 'sottocosto';
             else $stato = 'ok';
+            $disp     = $product->disponibilita ?? 'disponibile';
+            $ordStep  = $product->ordine_step   ?? 'colli';
+            $stepLabels = [
+                'colli'        => ['label' => 'COLLI', 'bg' => '#e3f0ff', 'color' => '#1a56a0'],
+                'mezzo_collo'  => ['label' => '½COLL', 'bg' => '#e3f0ff', 'color' => '#1a56a0'],
+                'kg'           => ['label' => 'KG',    'bg' => '#f0faf4', 'color' => '#2d6a4f'],
+                'grammi'       => ['label' => 'GR',    'bg' => '#fef9c3', 'color' => '#854d0e'],
+                'pezzi_interi' => ['label' => 'PZ',    'bg' => '#fce7f3', 'color' => '#9d174d'],
+            ];
+            $sl = $stepLabels[$ordStep] ?? ['label' => $ordStep, 'bg' => '#f3f4f6', 'color' => '#555'];
         @endphp
 
         <tr class="product-row"
@@ -107,12 +133,21 @@
             data-name-lower="{{ strtolower($product->name) }}"
             data-origine="{{ strtolower($product->origin ?? '') }}"
             data-um="{{ strtolower($product->unit ?? 'kg') }}"
-            data-stato="{{ $stato }}">
+            data-stato="{{ $stato }}"
+            data-disp="{{ $disp }}"
+            data-categoria="{{ strtolower($product->category ?? '') }}">
 
             <td style="text-align:center">
                 <input type="checkbox" class="row-check" data-id="{{ $product->id }}" onchange="updateSelection()">
             </td>
             <td style="font-weight:700;color:var(--dark)">{{ $product->name }}</td>
+            <td style="text-align:center">
+                <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;
+                    background:#f0f4f1;border:1px solid #c3e6cb;padding:2px 7px;border-radius:6px;color:#2d6a4f">
+                    {{ $product->sku ?? '—' }}
+                </span>
+            </td>
+            <td style="font-size:12px;color:var(--muted)">{{ $product->category ?? '—' }}</td>
             <td style="color:var(--muted);font-size:13px">{{ $product->origin ?? '—' }}</td>
             <td>
                 <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600">
@@ -156,6 +191,28 @@
                     <span style="background:var(--green-xl);color:var(--green);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">✓ OK</span>
                 @endif
             </td>
+
+            {{-- DISPONIBILITÀ — click per ciclare tra stati --}}
+            <td style="text-align:center;cursor:pointer"
+                onclick="toggleDisponibilita(this, {{ $product->id }})"
+                data-disp="{{ $disp }}"
+                title="Clicca per cambiare disponibilità">
+                @if($disp == 'disponibile')
+                    <span class="disp-badge" style="background:#d4edda;color:#2d6a4f;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">✅ OK</span>
+                @elseif($disp == 'su_richiesta')
+                    <span class="disp-badge" style="background:#fff3e0;color:#e65100;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">🔶 Rich.</span>
+                @else
+                    <span class="disp-badge" style="background:#fde8e8;color:#c0392b;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">❌ No</span>
+                @endif
+            </td>
+
+            {{-- MODALITÀ ORDINE --}}
+            <td style="text-align:center">
+                <span style="background:{{ $sl['bg'] }};color:{{ $sl['color'] }};padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700">
+                    {{ $sl['label'] }}
+                </span>
+            </td>
+
             <td style="text-align:center">
                 <a href="{{ url('/products/' . $product->id . '/edit') }}" class="btn btn-secondary" style="padding:5px 12px;font-size:12px">✏️ Modifica</a>
             </td>
@@ -296,18 +353,22 @@ function exportCSV() {
 
 // ─── FILTRI ──────────────────────────────────────────────
 function filterRows() {
-    const q       = document.getElementById('searchInput').value.toLowerCase();
-    const origine = document.getElementById('filterOrigine').value.toLowerCase();
-    const um      = document.getElementById('filterUM').value.toLowerCase();
-    const stato   = document.getElementById('filterStato').value;
-    let visible   = 0;
+    const q         = document.getElementById('searchInput').value.toLowerCase();
+    const origine   = document.getElementById('filterOrigine').value.toLowerCase();
+    const um        = document.getElementById('filterUM').value.toLowerCase();
+    const stato     = document.getElementById('filterStato').value;
+    const disp      = document.getElementById('filterDisp').value;
+    const categoria = document.getElementById('filterCategoria').value.toLowerCase();
+    let visible     = 0;
 
     document.querySelectorAll('.product-row').forEach(row => {
         const match =
-            (!q       || row.dataset.nameLower.includes(q)) &&
-            (!origine || row.dataset.origine === origine) &&
-            (!um      || row.dataset.um === um) &&
-            (!stato   || row.dataset.stato === stato);
+            (!q         || row.dataset.nameLower.includes(q)) &&
+            (!origine   || row.dataset.origine === origine) &&
+            (!um        || row.dataset.um === um) &&
+            (!stato     || row.dataset.stato === stato) &&
+            (!disp      || row.dataset.disp === disp) &&
+            (!categoria || row.dataset.categoria === categoria);
         row.style.display = match ? '' : 'none';
         if (match) visible++;
     });
@@ -316,10 +377,12 @@ function filterRows() {
 }
 
 function resetFiltri() {
-    document.getElementById('searchInput').value   = '';
-    document.getElementById('filterOrigine').value = '';
-    document.getElementById('filterUM').value      = '';
-    document.getElementById('filterStato').value   = '';
+    document.getElementById('searchInput').value     = '';
+    document.getElementById('filterOrigine').value   = '';
+    document.getElementById('filterUM').value        = '';
+    document.getElementById('filterStato').value     = '';
+    document.getElementById('filterDisp').value      = '';
+    document.getElementById('filterCategoria').value = '';
     filterRows();
 }
 
@@ -346,8 +409,54 @@ document.getElementById('searchInput').addEventListener('input', filterRows);
 document.getElementById('filterOrigine').addEventListener('change', filterRows);
 document.getElementById('filterUM').addEventListener('change', filterRows);
 document.getElementById('filterStato').addEventListener('change', filterRows);
+document.getElementById('filterDisp').addEventListener('change', filterRows);
+document.getElementById('filterCategoria').addEventListener('change', filterRows);
 
 filterRows();
+
+// ─── TOGGLE DISPONIBILITÀ ────────────────────────────────
+const dispCycle = ['disponibile', 'su_richiesta', 'non_disponibile'];
+const dispConfig = {
+    'disponibile':     { label: '✅ OK',    bg: '#d4edda', color: '#2d6a4f' },
+    'su_richiesta':    { label: '🔶 Rich.', bg: '#fff3e0', color: '#e65100' },
+    'non_disponibile': { label: '❌ No',    bg: '#fde8e8', color: '#c0392b' },
+};
+
+function toggleDisponibilita(cell, productId) {
+    const current = cell.dataset.disp || 'disponibile';
+    const nextIdx = (dispCycle.indexOf(current) + 1) % dispCycle.length;
+    const next    = dispCycle[nextIdx];
+    const cfg     = dispConfig[next];
+
+    cell.style.opacity = '0.5';
+
+    fetch('/products/massive-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: JSON.stringify({ ids: [String(productId)], action: 'disp_set', value: next })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            cell.dataset.disp = next;
+            // Aggiorna anche data-disp sulla riga
+            cell.closest('tr').dataset.disp = next;
+            const badge = cell.querySelector('.disp-badge');
+            if (badge) {
+                badge.textContent        = cfg.label;
+                badge.style.background   = cfg.bg;
+                badge.style.color        = cfg.color;
+            }
+        } else {
+            alert('Errore nel salvataggio');
+        }
+        cell.style.opacity = '1';
+    })
+    .catch(err => {
+    console.error(err);
+    alert('Errore reale: ' + err);
+}); cell.style.opacity = '1'; });
+}
 
 // ─── EDITING INLINE STOCK ────────────────────────────────
 function startEditStock(cell, productId) {
@@ -404,7 +513,10 @@ function startEditStock(cell, productId) {
             }
             cancelEdit();
         })
-        .catch(() => { alert('Errore di rete'); cancelEdit(); });
+        .catch(err => {
+    console.error(err);
+    alert('Errore reale: ' + err);
+}); cancelEdit(); });
     }
 
     function cancelEdit() {
@@ -479,7 +591,10 @@ function startEditPrice(cell, productId) {
             }
             cancelEdit();
         })
-        .catch(() => { alert('Errore di rete'); cancelEdit(); });
+        .catch(err => {
+    console.error(err);
+    alert('Errore reale: ' + err);
+}); cancelEdit(); });
     }
 
     function cancelEdit() {

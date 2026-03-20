@@ -67,7 +67,7 @@
                                 data-tara="{{ (float)($p->tara ?? 0) }}"
                                 data-price="{{ (float)($p->price ?? 0) }}"
                                 data-pieces="{{ (int)($p->pieces_per_box ?? 0) }}">
-                                {{ $p->name }}
+                                {{ $p->name }}{{ $p->origin ? ' (' . $p->origin . ')' : '' }}{{ $p->avg_box_weight ? ' · ' . number_format($p->avg_box_weight, 1, ',', '.') . 'kg/cs' : '' }}
                             </option>
                         @endforeach
                     </select>
@@ -193,7 +193,16 @@ document.addEventListener('input', function(e){
     // Se cambiano i colli → azzera kg_real e kg_net per ricalcolare
     if(e.target.name === 'colli[]'){
         row.querySelector('[name="kg_real[]"]').value = '';
-        row.querySelector('[name="kg_net[]"]').value  = '';
+        const kgNetInput = row.querySelector('[name="kg_net[]"]');
+        kgNetInput.value = '';
+        delete kgNetInput.dataset.manual;
+    }
+
+    // Se cambia la tara → azzera kg_net e ricalcola
+    if(e.target.name === 'tara_unit[]'){
+        const kgNetInput = row.querySelector('[name="kg_net[]"]');
+        kgNetInput.value = '';
+        delete kgNetInput.dataset.manual;
     }
 
     calcRow(row);

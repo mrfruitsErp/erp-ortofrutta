@@ -1,13 +1,24 @@
-public function up(): void
-{
-    Schema::table('orders', function (Blueprint $table) {
-        $table->text('notes')->nullable()->after('delivery_slot');
-    });
-}
+<?php
 
-public function down(): void
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
 {
-    Schema::table('orders', function (Blueprint $table) {
-        $table->dropColumn('notes');
-    });
-}
+    public function up(): void
+    {
+        if (!Schema::hasColumn('orders', 'notes')) {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->text('notes')->nullable()->after('delivery_slot');
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropColumn('notes');
+        });
+    }
+};

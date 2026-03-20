@@ -8,6 +8,34 @@ use App\Models\Stock;
 
 class ProductController extends Controller
 {
+    // -------------------------------------------------------
+    private function generateSku(string $category): string
+    {
+        $prefixes = [
+            'Frutta'            => 'FR',
+            'Verdura'           => 'VE',
+            'Erbe Aromatiche'   => 'ER',
+            'Funghi'            => 'FU',
+            'Frutta Secca'      => 'FS',
+            'Legumi Secchi'     => 'LS',
+            'Insalata 4a Gamma' => 'IV',
+        ];
+
+        $prefix = $prefixes[$category] ?? 'PR';
+
+        $last = Product::where('sku', 'like', $prefix . '%')
+            ->orderByRaw('CAST(SUBSTRING(sku, 3) AS UNSIGNED) DESC')
+            ->first();
+
+        $nextNum = 1;
+        if ($last && preg_match('/\d+$/', $last->sku, $match)) {
+            $nextNum = (int) $match[0] + 1;
+        }
+
+        return $prefix . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+    }
+
+    // -------------------------------------------------------
     public function index()
     {
         $products = Product::orderBy('name')->get();
@@ -19,48 +47,51 @@ class ProductController extends Controller
         return view('products.index', compact('products'));
     }
 
+    // -------------------------------------------------------
     public function create()
     {
         return view('products.create');
     }
 
+    // -------------------------------------------------------
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name'              => 'required|string|max:255',
+            'category'          => 'required|string|max:255',
+            'modalita_vendita'  => 'required|in:cassa_kg,cassa_collo,kg_liberi,pezzo,peso_step',
         ]);
+
+        $modalita = $request->modalita_vendita;
 
         $product = Product::create([
-            'name'           => $request->name,
-            'origin'         => $request->origin,
-            'unit'           => $request->unit ?? 'kg',
-            'sale_type'      => $request->sale_type ?? 'kg',
-            'avg_box_weight' => $request->avg_box_weight ?? 0,
-            'tara'           => $request->tara ?? 0,
-            'pieces_per_box' => $request->pieces_per_box ?? 0,
-            'price'          => $request->price ?? 0,
-            'cost_price'     => $request->cost_price ?? 0,
-            'vat_rate'       => $request->vat_rate ?? 4,
+            'name'              => $request->name,
+            'origin'            => $request->origin,
+            'modalita_vendita'  => $modalita,
+            'step_grammi'       => $modalita === 'peso_step' ? ($request->step_grammi ?? 100) : null,
+            'avg_box_weight'    => $request->avg_box_weight ?? 0,
+            'tara'              => $request->tara ?? 0,
+            'pieces_per_box'    => $request->pieces_per_box ?? 0,
+            'price'             => $request->price ?? 0,
+            'cost_price'        => $request->cost_price ?? 0,
+            'vat_rate'          => $request->vat_rate ?? 4,
+            'category'          => $request->category,
+            'disponibilita'     => $request->disponibilita ?? 'disponibile',
+            'ordine_min'        => $request->ordine_min ?? 1,
+            'sku'               => $this->generateSku($request->category),
         ]);
 
-        // Stock iniziale
-        $stock = Stock::firstOrCreate(
-            ['product_id' => $product->id],
-            ['quantity' => 0, 'min_stock' => 0]
-        );
-
-        if ($request->filled('new_stock_qty')) {
-            $stock->quantity = $request->new_stock_qty;
-        }
-        if ($request->filled('min_stock')) {
-            $stock->min_stock = $request->min_stock;
-        }
-        $stock->save();
+        Stock::create([
+            'product_id' => $product->id,
+            'quantity'   => $request->new_stock_qty ?? 0,
+            'min_stock'  => $request->min_stock ?? 0,
+        ]);
 
         return redirect()->route('products.index')
-            ->with('success', 'Prodotto ' . $product->name . ' creato.');
+            ->with('success', 'Prodotto creato con successo');
     }
 
+    // -------------------------------------------------------
     public function edit($id)
     {
         $product = Product::findOrFail($id);
@@ -69,38 +100,42 @@ class ProductController extends Controller
         return view('products.edit', compact('product', 'stock'));
     }
 
+    // -------------------------------------------------------
     public function update(Request $request, $id)
     {
-        $product = Product::findOrFail($id);
+        $product  = Product::findOrFail($id);
+        $modalita = $request->modalita_vendita ?? $product->modalita_vendita;
 
         $product->update([
-            'name'           => $request->name,
-            'origin'         => $request->origin,
-            'unit'           => $request->unit,
-            'sale_type'      => $request->sale_type,
-            'avg_box_weight' => $request->avg_box_weight,
-            'tara'           => $request->tara ?? 0,
-            'pieces_per_box' => $request->pieces_per_box,
-            'price'          => $request->price,
-            'cost_price'     => $request->cost_price,
-            'vat_rate'       => $request->vat_rate ?? 4,
-            'disponibilita'  => $request->disponibilita ?? 'disponibile',
-            'ordine_step'    => $request->ordine_step ?? 'colli',
-            'ordine_min'     => $request->ordine_min ?? 1,
+            'name'              => $request->name,
+            'origin'            => $request->origin,
+            'modalita_vendita'  => $modalita,
+            'step_grammi'       => $modalita === 'peso_step' ? ($request->step_grammi ?? 100) : null,
+            'avg_box_weight'    => $request->avg_box_weight ?? 0,
+            'tara'              => $request->tara ?? 0,
+            'pieces_per_box'    => $request->pieces_per_box ?? 0,
+            'price'             => $request->price ?? 0,
+            'cost_price'        => $request->cost_price ?? 0,
+            'vat_rate'          => $request->vat_rate ?? 4,
+            'disponibilita'     => $request->disponibilita ?? 'disponibile',
+            'ordine_min'        => $request->ordine_min ?? 1,
+            'category'          => $request->category,
         ]);
 
+        // Aggiorna stock se specificato
         if ($request->filled('new_stock_qty')) {
             $stock = Stock::firstOrCreate(
                 ['product_id' => $product->id],
-                ['quantity' => 0]
+                ['quantity' => 0, 'min_stock' => 0]
             );
-            $stock->quantity  = $request->new_stock_qty;
-            $stock->min_stock = $request->min_stock ?? 0;
+            $stock->quantity = $request->new_stock_qty;
             $stock->save();
-        } elseif ($request->filled('min_stock')) {
+        }
+
+        if ($request->filled('min_stock')) {
             $stock = Stock::firstOrCreate(
                 ['product_id' => $product->id],
-                ['quantity' => 0]
+                ['quantity' => 0, 'min_stock' => 0]
             );
             $stock->min_stock = $request->min_stock;
             $stock->save();
@@ -109,6 +144,7 @@ class ProductController extends Controller
         return redirect()->back()->with('success', 'Prodotto aggiornato');
     }
 
+    // -------------------------------------------------------
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
@@ -120,63 +156,70 @@ class ProductController extends Controller
     }
 
     // -------------------------------------------------------
-    // AGGIORNAMENTO MASSIVO + INLINE
-    // -------------------------------------------------------
     public function massiveUpdate(Request $request)
     {
-        $ids    = $request->ids ?? [];
-        $action = $request->action;
-        $value  = $request->value;
+        $ids    = $request->input('ids', []);
+        $action = $request->input('action');
+        $value  = $request->input('value');
 
         if (empty($ids)) {
-            return response()->json(['success' => false, 'message' => 'Nessun prodotto selezionato']);
+            return response()->json(['success' => false]);
         }
 
-        $products = Product::whereIn('id', $ids)->get();
+        try {
+            foreach ($ids as $id) {
+                $product = Product::find($id);
+                if (!$product) continue;
 
-        foreach ($products as $product) {
-            switch ($action) {
+                switch ($action) {
+                    case 'disp_set':
+                        if (in_array($value, ['disponibile', 'su_richiesta', 'non_disponibile'])) {
+                            $product->disponibilita = $value;
+                            $product->save();
+                        }
+                        break;
 
-                // Imposta stock diretto (editing inline)
-                case 'stock_set':
-                    $stock = Stock::firstOrCreate(
-                        ['product_id' => $product->id],
-                        ['quantity' => 0, 'min_stock' => 0]
-                    );
-                    $stock->quantity = round((float)$value, 3);
-                    $stock->save();
-                    break;
+                    case 'price_set':
+                        $product->price = $value;
+                        $product->save();
+                        break;
 
-                // Imposta prezzo diretto (editing inline)
-                case 'price_set':
-                    $product->price = round((float)$value, 2);
-                    $product->save();
-                    break;
+                    case 'cost_percent':
+                        $product->cost_price *= (1 + ($value / 100));
+                        $product->save();
+                        break;
 
-                // Modifica prezzo in percentuale
-                case 'price_percent':
-                    $product->price = round($product->price * (1 + $value / 100), 2);
-                    $product->save();
-                    break;
+                    case 'price_percent':
+                        $product->price *= (1 + ($value / 100));
+                        $product->save();
+                        break;
 
-                // Modifica costo in percentuale
-                case 'cost_percent':
-                    $product->cost_price = round($product->cost_price * (1 + $value / 100), 2);
-                    $product->save();
-                    break;
+                    case 'stock_set':
+                        $stock = Stock::firstOrCreate(
+                            ['product_id' => $product->id],
+                            ['quantity' => 0]
+                        );
+                        $stock->quantity = $value;
+                        $stock->save();
+                        break;
 
-                // Imposta scorta minima
-                case 'min_stock':
-                    $stock = Stock::firstOrCreate(
-                        ['product_id' => $product->id],
-                        ['quantity' => 0]
-                    );
-                    $stock->min_stock = (float)$value;
-                    $stock->save();
-                    break;
+                    case 'min_stock':
+                        $stock = Stock::firstOrCreate(
+                            ['product_id' => $product->id],
+                            ['quantity' => 0]
+                        );
+                        $stock->min_stock = $value;
+                        $stock->save();
+                        break;
+                }
             }
-        }
 
-        return response()->json(['success' => true]);
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

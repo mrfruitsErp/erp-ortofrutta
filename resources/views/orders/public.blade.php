@@ -204,6 +204,26 @@ input:focus, select:focus { border-color: #2d6a4f; background: white; }
         <div class="alert-success">✅ {{ session('success') }}</div>
     @endif
 
+    {{-- AVVISO PESO INDICATIVO --}}
+    <div style="background:#e3f0ff;border:1px solid #93c5fd;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1a56a0;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">ℹ️</span>
+        <div>
+            <strong>Pesi e importi indicativi</strong><br>
+            I pesi delle casse sono indicativi. Il peso reale verrà rilevato al momento della consegna e l'importo finale potrà variare. Ti invieremo conferma con prezzi e quantità definitivi.
+        </div>
+    </div>
+
+    @php $hasSuRichiesta = $products->whereIn('disponibilita', ['su_richiesta','non_disponibile'])->count() > 0; @endphp
+    @if($hasSuRichiesta)
+    <div style="background:#fff8e1;border:1px solid #f59e0b;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">⚠️</span>
+        <div>
+            <strong>Alcuni prodotti hanno disponibilità limitata</strong><br>
+            I prodotti segnati con <strong>⚠️ Disponibilità da confermare</strong> o <strong>❌ Non disponibile al momento</strong> possono essere comunque richiesti — ti contatteremo per confermare disponibilità, quantità e prezzo definitivo prima della consegna.
+        </div>
+    </div>
+    @endif
+
     <form method="POST">
     @csrf
 
@@ -256,11 +276,12 @@ input:focus, select:focus { border-color: #2d6a4f; background: white; }
 
             // Step di input in base alla modalità
             $inputStep = match($step) {
-                'colli'       => 1,
-                'mezzo_collo' => 0.5,
-                'kg'          => 0.5,
-                'grammi'      => 0.1,
-                default       => 1,
+                'colli'        => 1,
+                'mezzo_collo'  => 0.5,
+                'kg'           => 0.5,
+                'grammi'       => 0.1,   // step 100g
+                'pezzi_interi' => 1,
+                default        => 1,
             };
 
             // Override con regola cliente se prodotto usa colli
@@ -272,25 +293,41 @@ input:focus, select:focus { border-color: #2d6a4f; background: white; }
                     default       => 1,
                 };
             }
+
+            // Label unità per il cliente
+            $labelUM = match($step) {
+                'colli'        => 'casse',
+                'mezzo_collo'  => 'casse',
+                'kg'           => 'kg',
+                'grammi'       => 'kg',
+                'pezzi_interi' => 'pz',
+                default        => 'casse',
+            };
         @endphp
         <div class="product-row" style="{{ $disp == 'non_disponibile' ? 'opacity:0.7' : '' }}">
             <div>
                 <div class="product-name">
                     {{ $product->name }}
                     @if($disp == 'su_richiesta')
-                        <span style="background:#fff3e0;color:#e65100;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">Su richiesta</span>
+                        <span style="background:#fff3e0;color:#c05000;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px;border:1px solid #f59e0b">
+                            ⚠️ Disponibilità da confermare
+                        </span>
                     @elseif($disp == 'non_disponibile')
-                        <span style="background:#fde8e8;color:#c0392b;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">Non disponibile</span>
+                        <span style="background:#fde8e8;color:#c0392b;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px;border:1px solid #f87171">
+                            ❌ Non disponibile al momento
+                        </span>
                     @endif
                 </div>
                 <div class="product-price">
-                    € {{ number_format($product->price, 2, ',', '.') }}/{{ $um }}
+                    € {{ number_format($product->price, 2, ',', '.') }}/{{ $step == 'pezzi_interi' ? 'kg' : $um }}
                     @if($product->origin) · {{ $product->origin }} @endif
-                    @if($peso > 0 && $step != 'grammi' && $step != 'kg')
-                        · cassa ≈ {{ number_format($peso, 1, ',', '.') }} kg
-                    @endif
-                    @if($step == 'grammi')
-                        · min {{ number_format($min * 1000, 0) }}g
+                    @if($step == 'colli' || $step == 'mezzo_collo')
+                        @if($peso > 0) · cassa ≈ {{ number_format($peso, 1, ',', '.') }} kg <span style="color:#f59e0b;font-size:10px">indicativo</span> @endif
+                    @elseif($step == 'pezzi_interi')
+                        @if($peso > 0) · ≈ {{ number_format($peso, 1, ',', '.') }} kg/pz <span style="color:#f59e0b;font-size:10px">indicativo</span> @endif
+                        · pezzo intero
+                    @elseif($step == 'grammi')
+                        · step 100g · min {{ number_format($min * 1000, 0) }}g
                     @elseif($step == 'kg')
                         · min {{ number_format($min, 2, ',', '.') }} kg
                     @endif
@@ -307,7 +344,7 @@ input:focus, select:focus { border-color: #2d6a4f; background: white; }
                    data-step="{{ $step }}"
                    data-peso="{{ $peso }}"
                    oninput="calcRow(this)">
-            <div class="row-total" id="row-{{ $product->id }}">—</div>
+            <div style="text-align:right;font-size:12px;font-weight:700;font-family:monospace;white-space:nowrap" id="row-{{ $product->id }}">—</div>
         </div>
         @endforeach
     </div>
@@ -378,13 +415,15 @@ function calcRow(input) {
     if (qty > 0) {
         let importo = 0;
         if (step === 'colli' || step === 'mezzo_collo') {
-            // colli × peso cassa × prezzo/kg
+            const kg = qty * peso;
+            importo  = kg * price;
+            displayTotal = '≈ € ' + importo.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+        } else if (step === 'pezzi_interi') {
             const kg = qty * peso;
             importo  = kg * price;
             displayTotal = '≈ € ' + importo.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
         } else {
-            // kg o grammi: qty direttamente
-            importo     = qty * price;
+            importo      = qty * price;
             displayTotal = '€ ' + importo.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
         }
     }
@@ -399,7 +438,7 @@ function calcRow(input) {
         const q  = parseFloat(el.value) || 0;
         const s  = el.dataset.step || 'colli';
         const pe = parseFloat(el.dataset.peso) || 0;
-        if (s === 'colli' || s === 'mezzo_collo') {
+        if (s === 'colli' || s === 'mezzo_collo' || s === 'pezzi_interi') {
             t += q * pe * p;
         } else {
             t += q * p;

@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Client;
+use App\Models\ClientDeliveryPref;
+use App\Models\DeliveryTimeSlot;
 use App\Models\Document;
 use App\Models\DocumentRow;
 use App\Models\Payment;
+use App\Models\PaymentMethod;
+use App\Models\PriceList;
 
 class ClientController extends Controller
 {
-
     public function index()
     {
         $clients = Client::all();
@@ -29,7 +32,11 @@ class ClientController extends Controller
 
     public function create()
     {
-        return view('clients.create');
+        $priceLists     = PriceList::attivi()->get();
+        $paymentMethods = PaymentMethod::attivi()->get();
+        $deliverySlots  = DeliveryTimeSlot::attivi()->get();
+
+        return view('clients.create', compact('priceLists', 'paymentMethods', 'deliverySlots'));
     }
 
     public function store(Request $request)
@@ -37,7 +44,10 @@ class ClientController extends Controller
         $data = $this->extractFields($request);
         $data['order_token'] = Client::generateToken();
 
-        Client::create($data);
+        $client = Client::create($data);
+
+        // Salva preferenze fasce consegna
+        $this->syncDeliveryPrefs($client, $request);
 
         return redirect('/clients')->with('success', 'Cliente creato.');
     }
@@ -72,19 +82,32 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
 
-        // Genera token se mancante
         if (!$client->order_token) {
             $client->order_token = Client::generateToken();
             $client->save();
         }
 
-        return view('clients.edit', compact('client'));
+        $priceLists     = PriceList::attivi()->get();
+        $paymentMethods = PaymentMethod::attivi()->get();
+        $deliverySlots  = DeliveryTimeSlot::attivi()->get();
+
+        // Fasce selezionate per questo cliente
+        $clientSlotIds = $client->deliveryPrefs->pluck('delivery_time_slot_id')->toArray();
+        $clientPrefSlotId = $client->deliveryPrefs->where('preferito', true)->first()?->delivery_time_slot_id;
+
+        return view('clients.edit', compact(
+            'client', 'priceLists', 'paymentMethods', 'deliverySlots',
+            'clientSlotIds', 'clientPrefSlotId'
+        ));
     }
 
     public function update(Request $request, $id)
     {
         $client = Client::findOrFail($id);
         $client->update($this->extractFields($request));
+
+        // Salva preferenze fasce consegna
+        $this->syncDeliveryPrefs($client, $request);
 
         return redirect()->route('clients.show', $id)
             ->with('success', 'Cliente aggiornato.');
@@ -133,10 +156,29 @@ class ClientController extends Controller
         return view('reports.clients', ['clients' => $data]);
     }
 
-    // ── HELPER PRIVATO ──────────────────────────────────────
+    // ── SYNC DELIVERY PREFS ──────────────────────────────
+    private function syncDeliveryPrefs(Client $client, Request $request): void
+    {
+        $slotIds  = $request->input('delivery_slots', []);
+        $prefSlot = $request->input('delivery_slot_preferito');
+
+        // Rimuovi tutte le prefs esistenti e ricrea
+        ClientDeliveryPref::where('client_id', $client->id)->delete();
+
+        foreach ($slotIds as $slotId) {
+            ClientDeliveryPref::create([
+                'client_id'            => $client->id,
+                'delivery_time_slot_id' => $slotId,
+                'preferito'            => ($slotId == $prefSlot),
+            ]);
+        }
+    }
+
+    // ── EXTRACT FIELDS ──────────────────────────────────
     private function extractFields(Request $request): array
     {
         return [
+            // Anagrafica (invariata)
             'company_name'         => $request->company_name,
             'vat_number'           => $request->vat_number,
             'fiscal_code'          => $request->fiscal_code,
@@ -146,18 +188,28 @@ class ClientController extends Controller
             'province'             => $request->province,
             'phone'                => $request->phone,
             'email'                => $request->email,
-            'payment_terms'        => $request->payment_terms,
             'referente'            => $request->referente,
             'cellulare_referente'  => $request->cellulare_referente,
+            // Commerciale — NEW
+            'price_list_id'        => $request->price_list_id,
+            'payment_method_id'    => $request->payment_method_id,
+            'payment_terms'        => $request->payment_terms,  // legacy, mantenuto per compatibilità
+            'fido'                 => $request->fido ?? 0,
+            'iban'                 => $request->iban,
+            'banca'               => $request->banca,
+            // Ordini — NEW
+            'puo_ordinare_kg'      => $request->has('puo_ordinare_kg') ? true : ($request->puo_ordinare_kg_select === 'null' ? null : ($request->puo_ordinare_kg_select === '1')),
+            'orario_limite_ordine' => $request->orario_limite_ordine,
+            'modalita_ordine'      => $request->modalita_ordine ?? 'colli',
+            // Logistica (invariata)
             'zona_consegna'        => $request->zona_consegna,
             'giorni_consegna'      => $request->giorni_consegna ?? [],
             'giorni_chiusura'      => $request->giorni_chiusura ?? [],
             'fascia_oraria_inizio' => $request->fascia_oraria_inizio,
             'fascia_oraria_fine'   => $request->fascia_oraria_fine,
-            'fido'                 => $request->fido ?? 0,
+            // Stato (invariato)
             'note_interne'         => $request->note_interne,
             'stato'                => $request->stato ?? 'attivo',
-            'modalita_ordine'      => $request->modalita_ordine ?? 'colli',
         ];
     }
 }

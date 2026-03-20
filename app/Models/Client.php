@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Client extends Model
 {
     protected $fillable = [
+        // Existing fields
         'company_name',
         'vat_number',
         'fiscal_code',
@@ -29,13 +30,43 @@ class Client extends Model
         'stato',
         'order_token',
         'modalita_ordine',
+        // NEW ERP fields
+        'price_list_id',
+        'payment_method_id',
+        'puo_ordinare_kg',
+        'orario_limite_ordine',
+        'iban',
+        'banca',
     ];
 
     protected $casts = [
-        'giorni_consegna' => 'array',
-        'giorni_chiusura' => 'array',
-        'fido'            => 'decimal:2',
+        'giorni_consegna'  => 'array',
+        'giorni_chiusura'  => 'array',
+        'fido'             => 'decimal:2',
+        'puo_ordinare_kg'  => 'boolean',
     ];
+
+    // ── RELAZIONI ──
+
+    public function priceList()
+    {
+        return $this->belongsTo(PriceList::class);
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class);
+    }
+
+    public function deliveryPrefs()
+    {
+        return $this->hasMany(ClientDeliveryPref::class);
+    }
+
+    public function productOverrides()
+    {
+        return $this->hasMany(ClientProductOverride::class);
+    }
 
     public function documents()
     {
@@ -52,6 +83,49 @@ class Client extends Model
         return $this->hasMany(Payment::class);
     }
 
+    // ── HELPERS ──
+
+    /**
+     * Il metodo di pagamento effettivo: override cliente > default listino > payment_terms legacy
+     */
+    public function getEffectivePaymentMethodAttribute(): ?PaymentMethod
+    {
+        if ($this->payment_method_id) {
+            return $this->paymentMethod;
+        }
+        if ($this->priceList && $this->priceList->payment_method_id) {
+            return $this->priceList->defaultPaymentMethod;
+        }
+        return null;
+    }
+
+    /**
+     * Può ordinare a kg? Override cliente > regola listino > false
+     */
+    public function getPuoOrdinarKgEffectivoAttribute(): bool
+    {
+        if ($this->puo_ordinare_kg !== null) {
+            return (bool) $this->puo_ordinare_kg;
+        }
+        if ($this->priceList) {
+            return (bool) $this->priceList->puo_ordinare_kg;
+        }
+        return false;
+    }
+
+    /**
+     * Orario limite ordine: override cliente > setting globale
+     */
+    public function getOrarioLimiteEffectivoAttribute(): string
+    {
+        if ($this->orario_limite_ordine) {
+            return $this->orario_limite_ordine;
+        }
+        return \DB::table('settings')->where('key', 'orario_limite_ordine_default')->value('value') ?? '21:00';
+    }
+
+    // ── ATTRIBUTI CALCOLATI (già esistenti) ──
+
     public function getTotalDocumentsAttribute()
     {
         return $this->documents->sum('total_calculated');
@@ -67,13 +141,11 @@ class Client extends Model
         return $this->total_documents - $this->total_paid;
     }
 
-    // Genera token univoco se non esiste
     public static function generateToken(): string
     {
         do {
             $token = bin2hex(random_bytes(16));
         } while (self::where('order_token', $token)->exists());
-
         return $token;
     }
 }
