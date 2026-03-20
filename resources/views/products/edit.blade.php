@@ -64,9 +64,7 @@
 
         <div style="border-top:1px solid var(--border);margin:16px 0"></div>
 
-        {{-- ============================================ --}}
-        {{-- BLOCCO UNIFICATO: MODALITÀ VENDITA          --}}
-        {{-- ============================================ --}}
+        {{-- MODALITÀ VENDITA --}}
         <div style="font-weight:700;font-size:11px;text-transform:uppercase;color:#7a9e8e;letter-spacing:0.5px;margin-bottom:12px">
             📦 Modalità Vendita
         </div>
@@ -99,8 +97,8 @@
             </div>
         </div>
 
-        {{-- ORDINE MINIMO + STEP GRAMMI --}}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        {{-- ORDINE: MINIMO + STEP + MAX --}}
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
             <div class="form-group">
                 <label>Ordine minimo</label>
                 <input type="number" step="0.001" name="ordine_min" id="field_ordine_min"
@@ -111,20 +109,46 @@
                 <label>Step ordinabile</label>
                 <input type="number" step="10" min="10" name="step_grammi" id="field_step_grammi"
                        value="{{ $product->step_grammi ?? 100 }}" oninput="updateRiepilogo()">
-                <div style="font-size:10px;color:#999;margin-top:3px">grammi (es. 100 = multipli di 100g)</div>
+                <div style="font-size:10px;color:#999;margin-top:3px">grammi</div>
+            </div>
+            <div class="form-group">
+                <label>Ordine massimo</label>
+                <input type="number" step="0.001" name="ordine_max" id="field_ordine_max"
+                       value="{{ $product->ordine_max }}"
+                       placeholder="Nessun limite">
+                <div style="font-size:10px;color:#999;margin-top:3px" id="unit_massimo">casse</div>
+            </div>
+        </div>
+
+        {{-- MIN KG PER CLIENTI FLESSIBILI (solo per cassa_kg) --}}
+        <div id="wrap_flessibile" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:12px 14px;margin-bottom:12px">
+            <div style="font-size:11px;color:#f57f17;font-weight:700;margin-bottom:8px">
+                ⚡ Clienti con ordine a kg (listino HoReCa)
+            </div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px">
+                I clienti il cui listino permette di ordinare a kg vedranno anche l'opzione kg
+                per questo prodotto. Imposta il minimo kg.
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <label>Minimo kg per ordini a kg</label>
+                <input type="number" step="0.1" name="ordine_min_kg" id="field_ordine_min_kg"
+                       value="{{ $product->ordine_min_kg }}"
+                       placeholder="es. 2 (= minimo 2 kg)">
+                <div style="font-size:10px;color:#999;margin-top:3px">
+                    Lascia vuoto = non ordinabile a kg nemmeno per clienti con listino flessibile
+                </div>
             </div>
         </div>
 
         <div style="border-top:1px solid var(--border);margin:16px 0"></div>
 
-        {{-- DATI TECNICI CASSA (collapsible) --}}
+        {{-- DATI TECNICI CASSA --}}
         <div id="wrap_dati_cassa">
             <button type="button" onclick="toggleCassa()"
                 style="background:none;border:none;color:#7a9e8e;font-size:11px;cursor:pointer;padding:0;text-decoration:underline">
                 📐 Dati tecnici cassa (opzionale) ▾
             </button>
             <div id="dati_cassa" style="display:{{ ($product->avg_box_weight || $product->pieces_per_box) ? '' : 'none' }};margin-top:12px">
-
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
                     <div class="form-group">
                         <label>Pezzi / Mazzi per Cassa</label>
@@ -142,14 +166,12 @@
                                value="{{ $product->tara ?? 0 }}">
                     </div>
                 </div>
-
                 <div id="box_peso_pezzo" style="background:#f0faf4;border:1px solid #c3e6cb;border-radius:6px;padding:10px 14px;margin-top:8px;display:none">
                     <div style="font-size:10px;color:#2d6a4f;font-weight:700;text-transform:uppercase;margin-bottom:4px">Peso per pezzo / mazzo</div>
                     <div style="font-size:18px;font-weight:700;color:#2d6a4f">
                         <span id="peso_pezzo_display">—</span> kg
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -161,23 +183,18 @@
         {{-- STOCK --}}
         <div class="card">
             <div style="font-weight:700;margin-bottom:16px">Gestione Stock</div>
-
             <div style="margin-bottom:16px">
-                <div style="font-size:11px;color:#999;text-transform:uppercase;font-weight:600;margin-bottom:4px">
-                    Stock attuale
-                </div>
+                <div style="font-size:11px;color:#999;text-transform:uppercase;font-weight:600;margin-bottom:4px">Stock attuale</div>
                 <div style="font-size:22px;font-weight:700">
                     {{ number_format($stock->quantity ?? 0, 3, ',', '.') }}
                     <span style="font-size:14px;color:#999" id="stock_unit_label">{{ $product->unita_stock ?? 'pz' }}</span>
                 </div>
             </div>
-
             <div class="form-group">
                 <label>Nuova quantità</label>
                 <input type="number" step="0.001" name="new_stock_qty"
                        placeholder="Lascia vuoto per non modificare">
             </div>
-
             <div class="form-group">
                 <label>Scorta minima</label>
                 <input type="number" step="0.001" name="min_stock"
@@ -188,7 +205,6 @@
         {{-- DISPONIBILITÀ --}}
         <div class="card">
             <div style="font-weight:700;margin-bottom:16px">📋 Disponibilità</div>
-
             <div class="form-group">
                 <label>Disponibilità</label>
                 <select name="disponibilita">
@@ -222,44 +238,29 @@
 <script>
 const config = {
     cassa_kg: {
-        unitPrezzo: '€/kg',
-        unitMinimo: 'casse',
-        unitStock:  'casse',
+        unitPrezzo: '€/kg', unitMinimo: 'casse', unitMax: 'casse', unitStock: 'casse',
         help: 'Il cliente ordina per casse. Prezzo finale = €/kg × peso reale alla consegna (indicativo).',
-        showStep: false,
-        showPesoPezzo: false,
+        showStep: false, showPesoPezzo: false, showFlessibile: true,
     },
     cassa_collo: {
-        unitPrezzo: '€/collo',
-        unitMinimo: 'casse',
-        unitStock:  'casse',
+        unitPrezzo: '€/collo', unitMinimo: 'casse', unitMax: 'casse', unitStock: 'casse',
         help: 'Il cliente ordina per casse. Prezzo fisso per collo, indipendente dal peso.',
-        showStep: false,
-        showPesoPezzo: false,
+        showStep: false, showPesoPezzo: false, showFlessibile: false,
     },
     kg_liberi: {
-        unitPrezzo: '€/kg',
-        unitMinimo: 'kg',
-        unitStock:  'kg',
+        unitPrezzo: '€/kg', unitMinimo: 'kg', unitMax: 'kg', unitStock: 'kg',
         help: 'Il cliente inserisce i kg desiderati liberamente.',
-        showStep: false,
-        showPesoPezzo: false,
+        showStep: false, showPesoPezzo: false, showFlessibile: false,
     },
     pezzo: {
-        unitPrezzo: '€/pz',
-        unitMinimo: 'pezzi',
-        unitStock:  'pz',
+        unitPrezzo: '€/pz', unitMinimo: 'pezzi', unitMax: 'pezzi', unitStock: 'pz',
         help: 'Il cliente ordina per pezzi o mazzi (erbe aromatiche, insalate, angurie, meloni...).',
-        showStep: false,
-        showPesoPezzo: true,
+        showStep: false, showPesoPezzo: true, showFlessibile: false,
     },
     peso_step: {
-        unitPrezzo: '€/kg',
-        unitMinimo: 'grammi',
-        unitStock:  'kg',
-        help: 'Il cliente ordina in multipli di grammi (es. zenzero a step di 100g, curcuma a step di 50g).',
-        showStep: true,
-        showPesoPezzo: false,
+        unitPrezzo: '€/kg', unitMinimo: 'grammi', unitMax: 'grammi', unitStock: 'kg',
+        help: 'Il cliente ordina in multipli di grammi (es. zenzero a step di 100g).',
+        showStep: true, showPesoPezzo: false, showFlessibile: false,
     }
 };
 
@@ -271,19 +272,16 @@ function onModalitaChange() {
     document.getElementById('unit_price').textContent   = c.unitPrezzo;
     document.getElementById('unit_cost').textContent     = c.unitPrezzo;
     document.getElementById('unit_minimo').textContent   = c.unitMinimo;
+    document.getElementById('unit_massimo').textContent  = c.unitMax;
     document.getElementById('modalita_help').textContent = c.help;
     document.getElementById('stock_unit_label').textContent = c.unitStock;
 
     document.getElementById('wrap_step_grammi').style.display = c.showStep ? '' : 'none';
     document.getElementById('box_peso_pezzo').style.display   = c.showPesoPezzo ? '' : 'none';
+    document.getElementById('wrap_flessibile').style.display  = c.showFlessibile ? '' : 'none';
 
-    // Dati cassa: meno evidenti se non rilevanti (kg_liberi, peso_step)
     const cassaWrap = document.getElementById('wrap_dati_cassa');
-    if (mode === 'kg_liberi' || mode === 'peso_step') {
-        cassaWrap.style.opacity = '0.5';
-    } else {
-        cassaWrap.style.opacity = '1';
-    }
+    cassaWrap.style.opacity = (mode === 'kg_liberi' || mode === 'peso_step') ? '0.5' : '1';
 
     updateRiepilogo();
 }
@@ -297,7 +295,6 @@ function calcPesoPerPezzo() {
     const peso  = parseFloat(document.getElementById('field_weight').value) || 0;
     const pezzi = parseInt(document.getElementById('field_pieces').value) || 0;
     const el    = document.getElementById('peso_pezzo_display');
-
     if (peso > 0 && pezzi > 0) {
         el.textContent = (peso / pezzi).toLocaleString('it-IT', {minimumFractionDigits:3, maximumFractionDigits:3});
     } else {
@@ -311,33 +308,41 @@ function updateRiepilogo() {
     const minimo = document.getElementById('field_ordine_min').value || '1';
     const peso   = document.getElementById('field_weight').value || '0';
     const step   = document.getElementById('field_step_grammi').value || '100';
+    const max    = document.getElementById('field_ordine_max').value;
+    const minKg  = document.getElementById('field_ordine_min_kg').value;
     const el     = document.getElementById('riepilogo');
 
     let html = '';
+    const c = config[mode];
+    const maxLabel = max ? `<br><strong>Massimo:</strong> ${max} ${c ? c.unitMax : ''}` : '';
+
     switch (mode) {
         case 'cassa_kg':
             const stima = (parseFloat(prezzo) * parseFloat(peso)).toFixed(2);
             html = `<strong>Prezzo:</strong> ${prezzo} €/kg<br>
                     <strong>Peso cassa:</strong> ≈ ${peso} kg<br>
                     <strong>Stima per cassa:</strong> ≈ € ${stima}<br>
-                    <strong>Minimo:</strong> ${minimo} cassa/e`;
+                    <strong>Minimo:</strong> ${minimo} cassa/e${maxLabel}`;
+            if (minKg) {
+                html += `<br><span style="color:#f57f17">⚡ <strong>Clienti kg:</strong> min ${minKg} kg</span>`;
+            }
             break;
         case 'cassa_collo':
             html = `<strong>Prezzo:</strong> ${prezzo} €/collo (fisso)<br>
-                    <strong>Minimo:</strong> ${minimo} cassa/e`;
+                    <strong>Minimo:</strong> ${minimo} cassa/e${maxLabel}`;
             break;
         case 'kg_liberi':
             html = `<strong>Prezzo:</strong> ${prezzo} €/kg<br>
-                    <strong>Minimo:</strong> ${minimo} kg`;
+                    <strong>Minimo:</strong> ${minimo} kg${maxLabel}`;
             break;
         case 'pezzo':
             html = `<strong>Prezzo:</strong> ${prezzo} €/pz<br>
-                    <strong>Minimo:</strong> ${minimo} pezzo/i`;
+                    <strong>Minimo:</strong> ${minimo} pezzo/i${maxLabel}`;
             break;
         case 'peso_step':
             html = `<strong>Prezzo:</strong> ${prezzo} €/kg<br>
-                    <strong>Step:</strong> ${step}g (cliente ordina multipli di ${step}g)<br>
-                    <strong>Minimo:</strong> ${minimo}g`;
+                    <strong>Step:</strong> ${step}g<br>
+                    <strong>Minimo:</strong> ${minimo}g${maxLabel}`;
             break;
     }
     el.innerHTML = html;

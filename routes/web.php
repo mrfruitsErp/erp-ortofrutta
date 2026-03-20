@@ -81,6 +81,16 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('products', ProductController::class);
 
+Route::get('/price-lists', [PriceListController::class, 'index'])
+    ->name('price-lists.index');
+ 
+Route::get('/price-lists/{id}/edit', [PriceListController::class, 'edit'])
+    ->name('price-lists.edit');
+ 
+Route::put('/price-lists/{id}', [PriceListController::class, 'update'])
+    ->name('price-lists.update');
+ 
+
     /*
     |--------------------------------------------------------------------------
     | DOCUMENTI
@@ -197,5 +207,7 @@ Route::middleware(['auth'])->group(function () {
 | AUTH
 |--------------------------------------------------------------------------
 */
-
+Route::get('/price-lists', [PriceListController::class, 'index'])->name('price-lists.index');
+Route::get('/price-lists/{id}/edit', [PriceListController::class, 'edit'])->name('price-lists.edit');
+Route::put('/price-lists/{id}', [PriceListController::class, 'update'])->name('price-lists.update');
 require __DIR__.'/auth.php';

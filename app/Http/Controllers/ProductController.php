@@ -8,7 +8,6 @@ use App\Models\Stock;
 
 class ProductController extends Controller
 {
-    // -------------------------------------------------------
     private function generateSku(string $category): string
     {
         $prefixes = [
@@ -35,7 +34,6 @@ class ProductController extends Controller
         return $prefix . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
     }
 
-    // -------------------------------------------------------
     public function index()
     {
         $products = Product::orderBy('name')->get();
@@ -47,13 +45,11 @@ class ProductController extends Controller
         return view('products.index', compact('products'));
     }
 
-    // -------------------------------------------------------
     public function create()
     {
         return view('products.create');
     }
 
-    // -------------------------------------------------------
     public function store(Request $request)
     {
         $request->validate([
@@ -78,6 +74,8 @@ class ProductController extends Controller
             'category'          => $request->category,
             'disponibilita'     => $request->disponibilita ?? 'disponibile',
             'ordine_min'        => $request->ordine_min ?? 1,
+            'ordine_min_kg'     => $request->ordine_min_kg,
+            'ordine_max'        => $request->ordine_max,
             'sku'               => $this->generateSku($request->category),
         ]);
 
@@ -91,7 +89,6 @@ class ProductController extends Controller
             ->with('success', 'Prodotto creato con successo');
     }
 
-    // -------------------------------------------------------
     public function edit($id)
     {
         $product = Product::findOrFail($id);
@@ -100,7 +97,6 @@ class ProductController extends Controller
         return view('products.edit', compact('product', 'stock'));
     }
 
-    // -------------------------------------------------------
     public function update(Request $request, $id)
     {
         $product  = Product::findOrFail($id);
@@ -119,10 +115,11 @@ class ProductController extends Controller
             'vat_rate'          => $request->vat_rate ?? 4,
             'disponibilita'     => $request->disponibilita ?? 'disponibile',
             'ordine_min'        => $request->ordine_min ?? 1,
+            'ordine_min_kg'     => $request->ordine_min_kg,
+            'ordine_max'        => $request->ordine_max,
             'category'          => $request->category,
         ]);
 
-        // Aggiorna stock se specificato
         if ($request->filled('new_stock_qty')) {
             $stock = Stock::firstOrCreate(
                 ['product_id' => $product->id],
@@ -144,7 +141,6 @@ class ProductController extends Controller
         return redirect()->back()->with('success', 'Prodotto aggiornato');
     }
 
-    // -------------------------------------------------------
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
@@ -155,7 +151,6 @@ class ProductController extends Controller
             ->with('success', 'Prodotto eliminato.');
     }
 
-    // -------------------------------------------------------
     public function massiveUpdate(Request $request)
     {
         $ids    = $request->input('ids', []);
@@ -178,22 +173,18 @@ class ProductController extends Controller
                             $product->save();
                         }
                         break;
-
                     case 'price_set':
                         $product->price = $value;
                         $product->save();
                         break;
-
                     case 'cost_percent':
                         $product->cost_price *= (1 + ($value / 100));
                         $product->save();
                         break;
-
                     case 'price_percent':
                         $product->price *= (1 + ($value / 100));
                         $product->save();
                         break;
-
                     case 'stock_set':
                         $stock = Stock::firstOrCreate(
                             ['product_id' => $product->id],
@@ -202,7 +193,6 @@ class ProductController extends Controller
                         $stock->quantity = $value;
                         $stock->save();
                         break;
-
                     case 'min_stock':
                         $stock = Stock::firstOrCreate(
                             ['product_id' => $product->id],
@@ -213,7 +203,6 @@ class ProductController extends Controller
                         break;
                 }
             }
-
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json([

@@ -119,4 +119,8 @@ class Product extends Model
     {
         return $query->whereIn('disponibilita', ['disponibile', 'su_richiesta']);
     }
+public function stock()
+    {
+        return $this->hasOne(Stock::class);
+    }
 }

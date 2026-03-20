@@ -39,6 +39,7 @@
                 <th>Numero</th>
                 <th>Cliente</th>
                 <th>Data</th>
+                <th>Ora</th>
                 <th style="text-align:center">Stato</th>
                 <th style="text-align:right">Totale</th>
                 <th style="text-align:center;width:160px">Azioni</th>
@@ -67,6 +68,10 @@
             <td>{{ $order->client->company_name ?? '—' }}</td>
 
             <td>{{ \Carbon\Carbon::parse($order->date)->format('d/m/Y') }}</td>
+
+            <td style="color:var(--muted);font-size:12px">
+                {{ \Carbon\Carbon::parse($order->created_at)->format('H:i') }}
+            </td>
 
             <td style="text-align:center">
                 @if($order->status == 'draft')
@@ -120,7 +125,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">
+            <td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">
                 Nessun ordine trovato
             </td>
         </tr>
