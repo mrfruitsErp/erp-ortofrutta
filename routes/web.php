@@ -16,6 +16,8 @@ use App\Http\Controllers\OrderPublicController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DeliveryZoneController;
 use App\Http\Controllers\DeliverySlotController;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,48 +56,13 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 
 Route::middleware(['auth'])->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | CLIENTI
-    |--------------------------------------------------------------------------
-    */
-
     Route::resource('clients', ClientController::class);
-
-    /*
-    |--------------------------------------------------------------------------
-    | FORNITORI
-    |--------------------------------------------------------------------------
-    */
-
     Route::resource('suppliers', SupplierController::class);
-
-    /*
-    |--------------------------------------------------------------------------
-    | PRODOTTI
-    |--------------------------------------------------------------------------
-    */
 
     Route::post('/products/massive-update', [ProductController::class, 'massiveUpdate'])
         ->name('products.massive-update');
 
     Route::resource('products', ProductController::class);
-
-Route::get('/price-lists', [PriceListController::class, 'index'])
-    ->name('price-lists.index');
- 
-Route::get('/price-lists/{id}/edit', [PriceListController::class, 'edit'])
-    ->name('price-lists.edit');
- 
-Route::put('/price-lists/{id}', [PriceListController::class, 'update'])
-    ->name('price-lists.update');
- 
-
-    /*
-    |--------------------------------------------------------------------------
-    | DOCUMENTI
-    |--------------------------------------------------------------------------
-    */
 
     Route::resource('documents', DocumentController::class);
 
@@ -111,12 +78,6 @@ Route::put('/price-lists/{id}', [PriceListController::class, 'update'])
     Route::get('/documents/{id}/cancel', [DocumentController::class, 'cancelDdt'])
         ->name('documents.cancel');
 
-    /*
-    |--------------------------------------------------------------------------
-    | ORDINI — le route custom PRIMA del resource
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/orders/{order}/confirm', [OrderController::class, 'confirmOrder'])
         ->name('orders.confirm');
 
@@ -125,20 +86,8 @@ Route::put('/price-lists/{id}', [PriceListController::class, 'update'])
 
     Route::resource('orders', OrderController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | IMPOSTAZIONI ORDINI
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/settings/orders', [SettingsController::class, 'orders']);
     Route::post('/settings/orders', [SettingsController::class, 'saveOrders']);
-
-    /*
-    |--------------------------------------------------------------------------
-    | LOGISTICA CONSEGNE
-    |--------------------------------------------------------------------------
-    */
 
     Route::get('/settings/delivery-zones', [DeliveryZoneController::class, 'index']);
     Route::post('/settings/delivery-zones', [DeliveryZoneController::class, 'store']);
@@ -150,56 +99,37 @@ Route::put('/price-lists/{id}', [PriceListController::class, 'update'])
     Route::post('/settings/delivery-slots/{id}', [DeliverySlotController::class, 'update']);
     Route::delete('/settings/delivery-slots/{id}', [DeliverySlotController::class, 'destroy']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | ACQUISTI
-    |--------------------------------------------------------------------------
-    */
-
     Route::resource('purchases', PurchaseController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | PAGAMENTI
-    |--------------------------------------------------------------------------
-    */
+    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
 
-    Route::get('/payments', [PaymentController::class, 'index'])
-        ->name('payments.index');
+    Route::get('/crediti', [PaymentController::class, 'crediti'])->name('crediti.index');
 
-    Route::post('/payments', [PaymentController::class, 'store'])
-        ->name('payments.store');
+    Route::get('/magazzino', [StockController::class, 'index'])->name('magazzino.index');
+    Route::get('/carico-magazzino', [StockController::class, 'create'])->name('carico.magazzino');
 
-    Route::get('/crediti', [PaymentController::class, 'crediti'])
-        ->name('crediti.index');
-
-    /*
-    |--------------------------------------------------------------------------
-    | MAGAZZINO GIACENZE
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/magazzino', [StockController::class, 'index'])
-        ->name('magazzino.index');
-
-    Route::get('/carico-magazzino', [StockController::class, 'create'])
-        ->name('carico.magazzino');
-
-    Route::post('/stock/bulk', [StockController::class, 'bulkStore'])
-        ->name('stock.bulk.store');
-
-    Route::post('/stock', [StockController::class, 'store'])
-        ->name('stock.store');
-
-    /*
-    |--------------------------------------------------------------------------
-    | MAGAZZINO MOVIMENTI
-    |--------------------------------------------------------------------------
-    */
+    Route::post('/stock/bulk', [StockController::class, 'bulkStore'])->name('stock.bulk.store');
+    Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
 
     Route::get('/movimenti-magazzino', [StockMovementController::class, 'index'])
         ->name('movimenti.index');
+});
 
+/*
+|--------------------------------------------------------------------------
+| RESET PASSWORD TEMPORANEO
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/reset-password', function () {
+    $user = User::create([
+        'name' => 'Admin',
+        'email' => 'admin@erp.com',
+        'password' => Hash::make('password123'),
+    ]);
+
+    return 'Utente creato: ' . $user->email;
 });
 
 /*
@@ -207,22 +137,5 @@ Route::put('/price-lists/{id}', [PriceListController::class, 'update'])
 | AUTH
 |--------------------------------------------------------------------------
 */
-Route::get('/price-lists', [PriceListController::class, 'index'])->name('price-lists.index');
-Route::get('/price-lists/{id}/edit', [PriceListController::class, 'edit'])->name('price-lists.edit');
-Route::put('/price-lists/{id}', [PriceListController::class, 'update'])->name('price-lists.update');
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 
-Route::get('/reset-password', function () {
-    $user = User::first(); // prende il primo utente
-
-    if (!$user) {
-        return 'Nessun utente trovato';
-    }
-
-    $user->password = Hash::make('password123');
-    $user->save();
-
-    return 'Password aggiornata per: ' . $user->email;
-});
 require __DIR__.'/auth.php';
