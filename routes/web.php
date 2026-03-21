@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClientController;
@@ -16,8 +17,6 @@ use App\Http\Controllers\OrderPublicController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DeliveryZoneController;
 use App\Http\Controllers\DeliverySlotController;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -118,18 +117,13 @@ Route::middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| RESET PASSWORD TEMPORANEO
+| MIGRATE (TEMPORANEO)
 |--------------------------------------------------------------------------
 */
 
-Route::get('/reset-password', function () {
-    $user = User::create([
-        'name' => 'Admin',
-        'email' => 'admin@erp.com',
-        'password' => Hash::make('password123'),
-    ]);
-
-    return 'Utente creato: ' . $user->email;
+Route::get('/run-migrate', function () {
+    Artisan::call('migrate', ['--force' => true]);
+    return 'MIGRATION COMPLETATE';
 });
 
 /*
