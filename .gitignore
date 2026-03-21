@@ -8,4 +8,3 @@
 /storage/logs*
 
 /bootstrap/cache/*
-/public/build/
