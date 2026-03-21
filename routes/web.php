@@ -210,4 +210,19 @@ Route::put('/price-lists/{id}', [PriceListController::class, 'update'])
 Route::get('/price-lists', [PriceListController::class, 'index'])->name('price-lists.index');
 Route::get('/price-lists/{id}/edit', [PriceListController::class, 'edit'])->name('price-lists.edit');
 Route::put('/price-lists/{id}', [PriceListController::class, 'update'])->name('price-lists.update');
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+Route::get('/reset-password', function () {
+    $user = User::first(); // prende il primo utente
+
+    if (!$user) {
+        return 'Nessun utente trovato';
+    }
+
+    $user->password = Hash::make('password123');
+    $user->save();
+
+    return 'Password aggiornata per: ' . $user->email;
+});
 require __DIR__.'/auth.php';
