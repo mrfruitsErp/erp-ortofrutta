@@ -1,21 +1,28 @@
 FROM php:8.2-cli
 
-WORKDIR /var/www
-
-COPY . .
-
 RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    unzip \
-    git \
+    git unzip libpq-dev zip \
     && docker-php-ext-install pdo pdo_pgsql
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+WORKDIR /var/www
+
+COPY . .
+
 RUN composer install --no-dev --optimize-autoloader
 
-RUN php artisan key:generate
+RUN mkdir -p storage/framework/views \
+    storage/framework/cache \
+    storage/framework/sessions \
+    bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+# 🔥 SOLO QUESTI (NO key generate)
+RUN php artisan config:clear
 RUN php artisan migrate --force
 RUN php artisan db:seed --force
 
-CMD php artisan serve --host=0.0.0.0 --port=10000
+EXPOSE 10000
+
+CMD php -S 0.0.0.0:10000 -t public
