@@ -23,7 +23,6 @@ class DatabaseSeeder extends Seeder
             'sku' => 'VE001',
             'category' => 'Verdura',
             'origin' => 'IT',
-            'unit' => 'kg',
             'price' => 4.00,
             'cost' => 1.60
         ]);
@@ -33,7 +32,6 @@ class DatabaseSeeder extends Seeder
             'sku' => 'FR001',
             'category' => 'Frutta',
             'origin' => 'IT',
-            'unit' => 'kg',
             'price' => 2.80,
             'cost' => 1.10
         ]);
@@ -43,7 +41,6 @@ class DatabaseSeeder extends Seeder
             'sku' => 'FR002',
             'category' => 'Frutta',
             'origin' => 'IT',
-            'unit' => 'kg',
             'price' => 0.90,
             'cost' => 0.30
         ]);
