@@ -2,24 +2,56 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Product;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        // =========================
+        // UTENTE TEST
+        // =========================
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Admin ERP',
+            'email' => 'admin@erp.com',
+        ]);
+
+        // =========================
+        // PRODOTTI DEMO
+        // =========================
+        Product::create([
+            'name' => 'Aglio',
+            'sku' => 'VE001',
+            'category' => 'Verdura',
+            'origin' => 'IT',
+            'unit' => 'kg',
+            'price' => 4.00,
+            'cost' => 1.60
+        ]);
+
+        Product::create([
+            'name' => 'Albicocche',
+            'sku' => 'FR001',
+            'category' => 'Frutta',
+            'origin' => 'IT',
+            'unit' => 'kg',
+            'price' => 2.80,
+            'cost' => 1.10
+        ]);
+
+        Product::create([
+            'name' => 'Anguria',
+            'sku' => 'FR002',
+            'category' => 'Frutta',
+            'origin' => 'IT',
+            'unit' => 'kg',
+            'price' => 0.90,
+            'cost' => 0.30
         ]);
     }
 }
