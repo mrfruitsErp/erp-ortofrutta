@@ -3,48 +3,60 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use App\Models\Product;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Seed the application's database.
+     */
     public function run(): void
     {
-        // UTENTE
-  User::firstOrCreate(
-    ['email' => 'admin@erp.com'],
-    [
-        'name' => 'Admin ERP',
-        'password' => bcrypt('password'),
-    ]
-);
+        // =========================
+        // UTENTE ADMIN (ANTI-DUPLICATI)
+        // =========================
+        DB::table('users')->updateOrInsert(
+            ['email' => 'admin@erp.com'],
+            [
+                'name' => 'Admin ERP',
+                'password' => bcrypt('password'),
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
 
-        // PRODOTTI
-        Product::create([
-            'name' => 'Aglio',
-            'sku' => 'VE001',
-            'category' => 'Verdura',
-            'origin' => 'IT',
-            'price' => 4.00,
-            'cost' => 1.60
-        ]);
+        // =========================
+        // PRODOTTI DEMO (ANTI-DUPLICATI)
+        // =========================
+        Product::updateOrCreate(
+            ['name' => 'Aglio'],
+            [
+                'price' => 4.00,
+                'cost' => 1.60,
+                'stock' => 100,
+                'unit' => 'kg'
+            ]
+        );
 
-        Product::create([
-            'name' => 'Albicocche',
-            'sku' => 'FR001',
-            'category' => 'Frutta',
-            'origin' => 'IT',
-            'price' => 2.80,
-            'cost' => 1.10
-        ]);
+        Product::updateOrCreate(
+            ['name' => 'Albicocche'],
+            [
+                'price' => 2.80,
+                'cost' => 1.10,
+                'stock' => 80,
+                'unit' => 'kg'
+            ]
+        );
 
-        Product::create([
-            'name' => 'Anguria',
-            'sku' => 'FR002',
-            'category' => 'Frutta',
-            'origin' => 'IT',
-            'price' => 0.90,
-            'cost' => 0.30
-        ]);
+        Product::updateOrCreate(
+            ['name' => 'Anguria'],
+            [
+                'price' => 0.90,
+                'cost' => 0.30,
+                'stock' => 50,
+                'unit' => 'kg'
+            ]
+        );
     }
 }
