@@ -133,3 +133,17 @@ Route::get('/run-migrate', function () {
 */
 
 require __DIR__.'/auth.php';
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+
+Route::get('/create-admin', function () {
+    User::updateOrCreate(
+        ['email' => 'admin@erp.com'],
+        [
+            'name' => 'Admin ERP',
+            'password' => Hash::make('password')
+        ]
+    );
+
+    return 'Admin creato';
+});
