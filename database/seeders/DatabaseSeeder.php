@@ -11,11 +11,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // UTENTE
-        User::create([
-            'name' => 'Admin ERP',
-            'email' => 'admin@erp.com',
-            'password' => bcrypt('password'),
-        ]);
+  User::firstOrCreate(
+    ['email' => 'admin@erp.com'],
+    [
+        'name' => 'Admin ERP',
+        'password' => bcrypt('password'),
+    ]
+);
 
         // PRODOTTI
         Product::create([
