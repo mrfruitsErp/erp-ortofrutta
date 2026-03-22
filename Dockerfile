@@ -17,7 +17,7 @@ COPY . .
 # Install Laravel
 RUN composer install --no-dev --optimize-autoloader
 
-# Permessi
+# Permessi Laravel
 RUN mkdir -p storage/framework/views \
     storage/framework/cache \
     storage/framework/sessions \
@@ -27,8 +27,8 @@ RUN mkdir -p storage/framework/views \
 # Porta
 EXPOSE 10000
 
-# 🔥 AVVIO CORRETTO (QUI STA LA CHIAVE)
+# 🔥 AVVIO CORRETTO + RESET DB
 CMD php artisan config:clear && \
-    php artisan migrate --force && \
+    php artisan migrate:fresh --force && \
     php artisan db:seed --force && \
     php -S 0.0.0.0:10000 -t public
