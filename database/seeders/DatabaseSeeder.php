@@ -8,22 +8,16 @@ use App\Models\Product;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // =========================
-        // UTENTE TEST
-        // =========================
-        User::factory()->create([
+        // UTENTE
+        User::create([
             'name' => 'Admin ERP',
             'email' => 'admin@erp.com',
+            'password' => bcrypt('password'),
         ]);
 
-        // =========================
-        // PRODOTTI DEMO
-        // =========================
+        // PRODOTTI
         Product::create([
             'name' => 'Aglio',
             'sku' => 'VE001',
