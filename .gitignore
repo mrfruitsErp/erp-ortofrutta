@@ -23,3 +23,10 @@ Thumbs.db
 
 # Logs
 *.log
+# Render
+.env.render
+.env.production
+
+# Local database
+*.sqlite
+*.sqlite3
