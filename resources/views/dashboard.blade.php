@@ -1,3 +1,4 @@
+<h1>DEPLOY OK 🔥</h1>
 @extends('layouts.app')
 
 @section('page-title', 'Dashboard — ' . date('d/m/Y'))
