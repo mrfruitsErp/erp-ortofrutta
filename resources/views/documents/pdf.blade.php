@@ -5,348 +5,549 @@
 <title>{{ $document->number }}</title>
 <style>
 
-* { box-sizing:border-box; margin:0; padding:0 }
+@page {
+    margin: 10px 15px;
+    size: A4;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
 
 body {
     font-family: DejaVu Sans, Arial, sans-serif;
-    font-size: 11px;
-    color: #1b2d27;
+    font-size: 9px;
+    color: #2d3748;
     background: #fff;
+    line-height: 1.3;
 }
 
-.page {
-    padding: 32px 36px;
-    max-width: 900px;
-    margin: 0 auto;
-}
-
-/* ── HEADER ── */
+/* ══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid #2d6a4f;
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    padding: 10px 18px;
+    margin-bottom: 10px;
+    border-radius: 5px;
 }
 
-.company-name  { font-size: 16px; font-weight: 700; color: #2d6a4f; margin-bottom: 4px; }
-.company-sub   { font-size: 11px; color: #555; line-height: 1.6; }
-.doc-block     { text-align: right; }
-.doc-type      { font-size: 20px; font-weight: 700; color: #2d6a4f; }
-.doc-number    { font-size: 13px; font-family: monospace; margin-top: 4px; }
-.doc-date      { font-size: 10px; color: #7a9e8e; margin-top: 2px; }
-
-/* ── PARTI ── */
-.parti { display: flex; gap: 20px; margin-bottom: 20px; }
-
-.parte-box {
-    flex: 1;
-    border: 1px solid #e2ebe5;
-    border-radius: 6px;
-    padding: 12px 14px;
-    background: #f8fbf9;
+.header-table {
+    width: 100%;
 }
 
-.parte-label {
-    font-size: 8px; font-weight: 700; text-transform: uppercase;
-    color: #7a9e8e; margin-bottom: 5px; letter-spacing: 0.5px;
-}
-
-.parte-name  { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
-.parte-info  { font-size: 10px; color: #555; line-height: 1.5; }
-
-/* ── META DOCUMENTO ── */
-.doc-meta {
-    display: flex;
-    border: 1px solid #e2ebe5;
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 20px;
-}
-
-.doc-meta-item {
-    flex: 1;
-    padding: 8px 14px;
-    border-right: 1px solid #e2ebe5;
-    font-size: 10px;
-}
-
-.doc-meta-item:last-child { border-right: none; }
-.doc-meta-label { color: #7a9e8e; font-size: 8px; text-transform: uppercase; margin-bottom: 3px; }
-.doc-meta-value { font-weight: 600; }
-
-/* ── TABELLA ── */
-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-
-thead tr { background: #2d6a4f; color: #fff; }
-
-thead th {
-    padding: 8px 8px;
-    font-size: 8px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-tbody td {
-    padding: 7px 8px;
-    border-bottom: 1px solid #eef2ef;
-    font-size: 10.5px;
-    vertical-align: middle;
-}
-
-tbody tr:nth-child(even) { background: #f8fbf8; }
-
-.c { text-align: center }
-.r { text-align: right; font-family: monospace }
-.l { text-align: left }
-.b { font-weight: 700 }
-
-/* ── TOTALI ── */
-.totali-wrap { display: flex; justify-content: flex-end; margin-bottom: 32px; }
-
-.totali-box {
-    width: 300px;
-    border: 1.5px solid #2d6a4f;
-    border-radius: 6px;
-    overflow: hidden;
-}
-
-.tot-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 7px 14px;
-    font-size: 11px;
-    border-bottom: 1px solid #e2ebe5;
-}
-
-.tot-row.final {
-    background: #2d6a4f;
+.header-left {
     color: #fff;
-    font-weight: 700;
-    font-size: 13px;
-    border-bottom: none;
 }
 
-.tot-row span:last-child { font-family: monospace; }
+.company-brand {
+    font-size: 18px;
+    font-weight: 700;
+}
 
-/* ── FIRME ── */
-.firme { display: flex; gap: 24px; margin-top: 40px; }
+.company-tagline {
+    font-size: 8px;
+    opacity: 0.85;
+}
 
-.firma-box {
-    flex: 1;
-    border: 1px solid #e2ebe5;
-    border-radius: 6px;
-    padding: 12px;
+.header-right {
+    text-align: right;
+}
+
+.doc-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    border-radius: 5px;
+    padding: 6px 12px;
     text-align: center;
 }
 
-.firma-label { font-size: 9px; color: #7a9e8e; margin-bottom: 36px; }
-.firma-line  { border-top: 1px solid #2d6a4f; }
+.doc-type {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+}
+
+.doc-number {
+    font-size: 9px;
+    color: rgba(255,255,255,0.9);
+    margin-top: 2px;
+    font-family: monospace;
+}
+
+/* ══════════════════════════════════════════
+   INFO CARDS
+═══════════════════════════════════════════ */
+.info-grid {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.info-card {
+    background: #f7fafc;
+    border-radius: 4px;
+    padding: 8px 10px;
+    border-left: 3px solid #48bb78;
+    vertical-align: top;
+}
+
+.info-card.mittente {
+    border-left-color: #2d6a4f;
+}
+
+.info-label {
+    font-size: 7px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #48bb78;
+    margin-bottom: 3px;
+}
+
+.info-card.mittente .info-label {
+    color: #2d6a4f;
+}
+
+.info-value {
+    font-size: 10px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 2px;
+}
+
+.info-sub {
+    font-size: 8px;
+    color: #718096;
+    line-height: 1.3;
+}
+
+/* ══════════════════════════════════════════
+   META ROW
+═══════════════════════════════════════════ */
+.meta-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.meta-table td {
+    padding: 5px 8px;
+    border-right: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.meta-table td:last-child {
+    border-right: none;
+}
+
+.meta-label {
+    font-size: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #a0aec0;
+    display: block;
+    margin-bottom: 1px;
+}
+
+.meta-value {
+    font-size: 8px;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+/* ══════════════════════════════════════════
+   TABELLA PRODOTTI
+═══════════════════════════════════════════ */
+.products-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+}
+
+.products-table th {
+    background: #2d3748;
+    padding: 5px 4px;
+    font-size: 7px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #fff;
+    text-align: left;
+}
+
+.products-table th.r { text-align: right; }
+.products-table th.c { text-align: center; }
+
+.products-table td {
+    padding: 4px;
+    font-size: 8px;
+    border-bottom: 1px solid #edf2f7;
+    vertical-align: middle;
+}
+
+.products-table tr:nth-child(even) td {
+    background: #f9fafb;
+}
+
+.r { text-align: right; }
+.c { text-align: center; }
+.b { font-weight: 700; }
+
+.origin-badge {
+    display: inline-block;
+    background: #e2e8f0;
+    color: #4a5568;
+    font-size: 7px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════ */
+.footer-table {
+    width: 100%;
+    margin-top: 6px;
+}
+
+.footer-left {
+    vertical-align: top;
+    width: 55%;
+}
+
+.footer-right {
+    vertical-align: top;
+    width: 45%;
+}
+
+.transport-box {
+    background: #f7fafc;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 8px;
+}
+
+.transport-row {
+    margin-bottom: 3px;
+}
+
+.transport-label {
+    font-size: 7px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #718096;
+    display: inline-block;
+    width: 95px;
+}
+
+.transport-value {
+    color: #2d3748;
+}
+
+.colli-badge {
+    display: inline-block;
+    background: #2d3748;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+    margin-top: 4px;
+}
+
+.totals-box {
+    border: 2px solid #48bb78;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.totals-row {
+    padding: 4px 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.totals-row:last-child {
+    border-bottom: none;
+}
+
+.totals-row table {
+    width: 100%;
+}
+
+.totals-label {
+    font-size: 8px;
+    color: #4a5568;
+}
+
+.totals-value {
+    text-align: right;
+    font-size: 9px;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.totals-row.final {
+    background: #48bb78;
+    padding: 5px 8px;
+}
+
+.totals-row.final .totals-label,
+.totals-row.final .totals-value {
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* ══════════════════════════════════════════
+   FIRME
+═══════════════════════════════════════════ */
+.signatures-table {
+    width: 100%;
+    margin-top: 12px;
+}
+
+.signature-cell {
+    width: 50%;
+    padding: 0 6px;
+}
+
+.signature-box {
+    border: 1px dashed #cbd5e0;
+    border-radius: 4px;
+    padding: 6px;
+    text-align: center;
+    height: 45px;
+}
+
+.signature-label {
+    font-size: 7px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #718096;
+}
+
+/* ══════════════════════════════════════════
+   DISCLAIMER
+═══════════════════════════════════════════ */
+.disclaimer {
+    margin-top: 8px;
+    padding: 5px 8px;
+    background: #fffaf0;
+    border-left: 3px solid #ed8936;
+    font-size: 7px;
+    color: #744210;
+}
 
 </style>
 </head>
 
 <body>
-<div class="page">
 
-    {{-- ── HEADER ── --}}
+    {{-- HEADER --}}
     <div class="header">
-        <div>
-            <div class="company-name">Mr.Fruits di La Rosa Fabrizio</div>
-            <div class="company-sub">
-                Via Ettore Perrone, 16 – 10122 Torino (TO)<br>
-                P.IVA: IT 11452750018 &nbsp;|&nbsp; C.F.: LRSFRZ84R04L219T
-            </div>
-        </div>
-        <div class="doc-block">
-            <div class="doc-type">{{ $document->type ?? 'DDT' }}</div>
-            <div class="doc-number">{{ $document->number }}</div>
-            <div class="doc-date">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</div>
-        </div>
+        <table class="header-table" cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="header-left">
+                    <div class="company-brand">🍎 Mr.Fruits</div>
+                    <div class="company-tagline">Frutta & Verdura</div>
+                </td>
+                <td class="header-right">
+                    <div class="doc-badge">
+                        <div class="doc-type">{{ $document->type ?? 'DDT' }}</div>
+                        <div class="doc-number">{{ $document->number }}</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    {{-- ── MITTENTE / DESTINATARIO ── --}}
-    <div class="parti">
+    {{-- INFO GRID: MITTENTE + DESTINATARIO --}}
+    <table class="info-grid" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="info-card mittente" style="width:48%">
+                <div class="info-label">Mittente / Cedente</div>
+                <div class="info-value">Mr.Fruits di La Rosa Fabrizio</div>
+                <div class="info-sub">
+                    Via Ettore Perrone, 16 – 10122 Torino (TO)<br>
+                    P.IVA: IT 11452750018 | C.F.: LRSFRZ84R04L219T
+                </div>
+            </td>
+            <td style="width:4%"></td>
+            <td class="info-card" style="width:48%">
+                <div class="info-label">Destinatario</div>
+                <div class="info-value">{{ $document->client->company_name ?? '—' }}</div>
+                <div class="info-sub">
+                    {{ $document->client->address ?? '' }}, {{ $document->client->cap ?? '' }} {{ $document->client->city ?? '' }} {{ $document->client->province ? '('.$document->client->province.')' : '' }}
+                    @if($document->client->vat_number ?? $document->client->vat ?? null)
+                        <br>P.IVA: {{ $document->client->vat_number ?? $document->client->vat }}
+                    @endif
+                </div>
+            </td>
+        </tr>
+    </table>
 
-        <div class="parte-box">
-            <div class="parte-label">Mittente</div>
-            <div class="parte-name">Mr.Fruits di La Rosa Fabrizio</div>
-            <div class="parte-info">
-                Via Ettore Perrone, 16<br>
-                10122 Torino (TO)<br>
-                P.IVA: IT 11452750018
-            </div>
-        </div>
+    {{-- META ROW --}}
+    <table class="meta-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td>
+                <span class="meta-label">Tipo Documento</span>
+                <span class="meta-value">D.d.T.</span>
+            </td>
+            <td>
+                <span class="meta-label">Nr. Documento</span>
+                <span class="meta-value">{{ preg_replace('/[^0-9]/', '', $document->number) }}</span>
+            </td>
+            <td>
+                <span class="meta-label">Data</span>
+                <span class="meta-value">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</span>
+            </td>
+            <td>
+                <span class="meta-label">Pagamento</span>
+                <span class="meta-value">{{ $document->client->payment_terms ?? 'data fattura' }}</span>
+            </td>
+            <td>
+                <span class="meta-label">Pagina</span>
+                <span class="meta-value">1/1</span>
+            </td>
+        </tr>
+    </table>
 
-        <div class="parte-box">
-            <div class="parte-label">Destinatario</div>
-            <div class="parte-name">{{ $document->client->company_name ?? '—' }}</div>
-            <div class="parte-info">
-                {{ $document->client->address ?? '' }}<br>
-                {{ $document->client->city ?? '' }}<br>
-                @if($document->client->vat ?? null)
-                    P.IVA: {{ $document->client->vat }}
-                @endif
-            </div>
-        </div>
+    {{-- TABELLA PRODOTTI (senza colonna IVA) --}}
+    @php
+        $totImponibile = 0;
+        $totColli = 0;
+        $ivaPerAliquota = [];
+    @endphp
 
-    </div>
-
-    {{-- ── META DOCUMENTO ── --}}
-    <div class="doc-meta">
-        <div class="doc-meta-item">
-            <div class="doc-meta-label">Tipo documento</div>
-            <div class="doc-meta-value">Documento di Trasporto</div>
-        </div>
-        <div class="doc-meta-item">
-            <div class="doc-meta-label">Numero</div>
-            <div class="doc-meta-value">{{ $document->number }}</div>
-        </div>
-        <div class="doc-meta-item">
-            <div class="doc-meta-label">Data</div>
-            <div class="doc-meta-value">{{ \Carbon\Carbon::parse($document->date)->format('d/m/Y') }}</div>
-        </div>
-        <div class="doc-meta-item">
-            <div class="doc-meta-label">Condizioni pagamento</div>
-            <div class="doc-meta-value">{{ $document->client->payment_terms ?? 'Bonifico bancario' }}</div>
-        </div>
-    </div>
-
-    {{-- ── TABELLA RIGHE ── --}}
-    <table>
+    <table class="products-table" cellpadding="0" cellspacing="0">
         <thead>
             <tr>
-                <th class="c" style="width:45px">Colli</th>
-                <th class="l">Descrizione articolo</th>
-                <th class="c" style="width:55px">Origine</th>
-                <th class="c" style="width:40px">UM</th>
-                <th class="r" style="width:80px">Tara unit.</th>
-                <th class="r" style="width:90px">Qtà netta</th>
-                <th class="r" style="width:80px">Prezzo</th>
-                <th class="r" style="width:95px">Importo</th>
+                <th class="c" style="width:40px">Colli</th>
+                <th>Descrizione Articolo</th>
+                <th class="c" style="width:40px">Orig.</th>
+                <th class="c" style="width:35px">UM</th>
+                <th class="r" style="width:50px">Tara</th>
+                <th class="r" style="width:70px">Qtà Netta</th>
+                <th class="r" style="width:55px">Prezzo</th>
+                <th class="r" style="width:70px">Importo</th>
             </tr>
         </thead>
         <tbody>
-
-        @php
-            $totImponibile = 0;
-            $ivaPerAliquota = []; // [ '4' => 6.00, '5' => 2.50, ... ]
-        @endphp
-
         @foreach($rows as $row)
-
-        @php
-            $product  = $row->product;
-            $saleType = $product->sale_type ?? 'kg';
-            $isUnit   = ($saleType === 'unit');
-
-            $um       = $isUnit ? 'PZ' : 'KG';
-            $taraUnit = $product->tara ?? 0;
-
-            if ($isUnit) {
-                $pezziPerCassa = $product->pieces_per_box ?? 0;
-                $qtaNetta      = $row->boxes * $pezziPerCassa;
-                $taraUnit      = 0;
-            } else {
-                $kgLordi  = ($row->kg_real > 0) ? $row->kg_real : $row->kg_estimated;
-                $taraTot  = $row->boxes * $taraUnit;
+            @php
+                $product = $row->product;
+                $origin = $product->origin ?? 'IT';
+                $taraUnit = $product->tara ?? 0;
+                
+                $kgLordi = ($row->kg_real > 0) ? $row->kg_real : $row->kg_estimated;
+                $taraTot = $row->boxes * $taraUnit;
                 $qtaNetta = $kgLordi - $taraTot;
-            }
+                if ($qtaNetta <= 0) $qtaNetta = $kgLordi;
 
-            $price   = $row->price_per_kg;
-            $importo = $row->total;
+                $price = $row->price_per_kg;
+                $importo = $row->total;
+                $vatRate = (int)($row->vat_rate ?? $product->vat_rate ?? 4);
 
-            // Leggi aliquota dalla riga DDT, fallback al prodotto, fallback a 4
-            $vatRate = (float)($row->vat_rate ?? $product->vat_rate ?? 4);
-            $vatKey  = number_format($vatRate, 0); // es. "4", "5", "10"
+                $totImponibile += $importo;
+                $totColli += $row->boxes;
 
-            $totImponibile += $importo;
-
-            // Accumula IVA per aliquota
-            if (!isset($ivaPerAliquota[$vatKey])) {
-                $ivaPerAliquota[$vatKey] = 0;
-            }
-            $ivaPerAliquota[$vatKey] += $importo * ($vatRate / 100);
-        @endphp
-
-        <tr>
-            <td class="c b">{{ $row->boxes }}</td>
-            <td class="l b">{{ $product->name ?? '—' }}</td>
-            <td class="c">{{ $product->origin ?? '—' }}</td>
-
-            <td class="c b" style="color:{{ $isUnit ? '#2d6a4f' : '#1a56a0' }}">
-                {{ $um }}
-            </td>
-
-            <td class="r">
-                @if(!$isUnit && $taraUnit > 0)
-                    {{ number_format($taraUnit, 3, ',', '.') }}
-                @else
-                    —
-                @endif
-            </td>
-
-            <td class="r b">
-                @if($isUnit)
-                    {{ number_format($qtaNetta, 0, ',', '.') }}
-                @else
-                    {{ number_format($qtaNetta, 2, ',', '.') }}
-                @endif
-            </td>
-
-            <td class="r">{{ number_format($price, 2, ',', '.') }}</td>
-
-            <td class="r b">€ {{ number_format($importo, 2, ',', '.') }}</td>
-        </tr>
-
+                if (!isset($ivaPerAliquota[$vatRate])) $ivaPerAliquota[$vatRate] = 0;
+                $ivaPerAliquota[$vatRate] += $importo * ($vatRate / 100);
+            @endphp
+            <tr>
+                <td class="c b">{{ $row->boxes }}</td>
+                <td class="b">{{ $product->name ?? '—' }}</td>
+                <td class="c"><span class="origin-badge">{{ strtoupper($origin) }}</span></td>
+                <td class="c">KG</td>
+                <td class="r">{{ number_format($taraUnit, 2, ',', '.') }}</td>
+                <td class="r b">{{ number_format($qtaNetta, 3, ',', '.') }}</td>
+                <td class="r">{{ number_format($price, 2, ',', '.') }}</td>
+                <td class="r b">€ {{ number_format($importo, 2, ',', '.') }}</td>
+            </tr>
         @endforeach
-
         </tbody>
     </table>
 
-    {{-- ── TOTALI con IVA raggruppata per aliquota ── --}}
+    {{-- FOOTER --}}
     @php
-        $totIvaTotale = array_sum($ivaPerAliquota);
-        ksort($ivaPerAliquota);
+        $totIva = array_sum($ivaPerAliquota);
+        $totFattura = $totImponibile + $totIva;
     @endphp
 
-    <div class="totali-wrap">
-        <div class="totali-box">
+    <table class="footer-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="footer-left">
+                <div class="transport-box">
+                    <div class="transport-row">
+                        <span class="transport-label">Causale Trasporto</span>
+                        <span class="transport-value">Vendita</span>
+                    </div>
+                    <div class="transport-row">
+                        <span class="transport-label">Trasporto a mezzo</span>
+                        <span class="transport-value">Cedente</span>
+                    </div>
+                    <div class="transport-row">
+                        <span class="transport-label">Aspetto dei beni</span>
+                        <span class="transport-value">Casse</span>
+                    </div>
+                    <div class="transport-row">
+                        <span class="transport-label">Destinazione</span>
+                        <span class="transport-value">Idem c/o sede legale</span>
+                    </div>
+                    <div>
+                        <span class="colli-badge">{{ $totColli }} COLLI</span>
+                    </div>
+                </div>
+            </td>
+            <td style="width:10px"></td>
+            <td class="footer-right">
+                <div class="totals-box">
+                    <div class="totals-row">
+                        <table cellpadding="0" cellspacing="0"><tr>
+                            <td class="totals-label">Imponibile</td>
+                            <td class="totals-value">€ {{ number_format($totImponibile, 2, ',', '.') }}</td>
+                        </tr></table>
+                    </div>
+                    @foreach($ivaPerAliquota as $aliquota => $importoIva)
+                    <div class="totals-row">
+                        <table cellpadding="0" cellspacing="0"><tr>
+                            <td class="totals-label">IVA {{ $aliquota }}%</td>
+                            <td class="totals-value">€ {{ number_format($importoIva, 2, ',', '.') }}</td>
+                        </tr></table>
+                    </div>
+                    @endforeach
+                    <div class="totals-row final">
+                        <table cellpadding="0" cellspacing="0"><tr>
+                            <td class="totals-label">TOTALE</td>
+                            <td class="totals-value">€ {{ number_format($totFattura, 2, ',', '.') }}</td>
+                        </tr></table>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
 
-            <div class="tot-row">
-                <span>Imponibile</span>
-                <span>€ {{ number_format($totImponibile, 2, ',', '.') }}</span>
-            </div>
+    {{-- FIRME --}}
+    <table class="signatures-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="signature-cell">
+                <div class="signature-box">
+                    <div class="signature-label">Firma Conducente</div>
+                </div>
+            </td>
+            <td class="signature-cell">
+                <div class="signature-box">
+                    <div class="signature-label">Firma Destinatario</div>
+                </div>
+            </td>
+        </tr>
+    </table>
 
-            @foreach($ivaPerAliquota as $aliquota => $importoIva)
-            <div class="tot-row">
-                <span>IVA {{ $aliquota }}%</span>
-                <span>€ {{ number_format($importoIva, 2, ',', '.') }}</span>
-            </div>
-            @endforeach
-
-            <div class="tot-row final">
-                <span>TOTALE</span>
-                <span>€ {{ number_format($totImponibile + $totIvaTotale, 2, ',', '.') }}</span>
-            </div>
-
-        </div>
+    {{-- DISCLAIMER --}}
+    <div class="disclaimer">
+        Eventuali reclami riguardanti qualità o quantità della merce dovranno essere inoltrati entro le ore 24 del giorno stesso della consegna.
     </div>
 
-    {{-- ── FIRME ── --}}
-    <div class="firme">
-        <div class="firma-box">
-            <div class="firma-label">Firma del destinatario</div>
-            <div class="firma-line"></div>
-        </div>
-        <div class="firma-box">
-            <div class="firma-label">Firma del mittente</div>
-            <div class="firma-line"></div>
-        </div>
-    </div>
-
-</div>
 </body>
 </html>

@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\DocumentRow;
 use App\Models\Stock;
 use App\Models\StockMovement;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DocumentController extends Controller
 {
@@ -196,5 +197,25 @@ class DocumentController extends Controller
         $document->delete();
 
         return redirect('/documents')->with('success', 'Documento eliminato');
+    }
+
+    /**
+     * Genera e visualizza il PDF del documento
+     */
+    public function pdf($id)
+    {
+        $document = Document::with('client')->findOrFail($id);
+        $rows = DocumentRow::with('product')->where('document_id', $id)->get();
+
+        $pdf = Pdf::loadView('documents.pdf', [
+            'document' => $document,
+            'rows' => $rows
+        ]);
+
+        // Imposta formato A4
+        $pdf->setPaper('a4', 'portrait');
+
+        // Visualizza nel browser (usa ->download() per forzare il download)
+        return $pdf->stream('DDT-' . $document->number . '.pdf');
     }
 }
