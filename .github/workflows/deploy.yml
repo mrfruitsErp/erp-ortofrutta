@@ -1,0 +1,35 @@
+name: Deploy ERP Laravel
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Clona repo
+      uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.2
+        extensions: mbstring, bcmath, pdo, mysql
+
+    - name: Installa dipendenze
+      run: composer install --no-dev --optimize-autoloader
+
+    - name: Setup Laravel
+      run: |
+        cp .env.example .env
+        php artisan key:generate
+
+    - name: Deploy FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: ${{ secrets.FTP_DIR }}
