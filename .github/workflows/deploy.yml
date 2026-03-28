@@ -1,4 +1,4 @@
-name: Deploy ERP Laravel
+name: Deploy ERP Laravel Ottimizzato
 
 on:
   push:
@@ -18,18 +18,20 @@ jobs:
         php-version: 8.2
         extensions: mbstring, bcmath, pdo, mysql
 
-    - name: Installa dipendenze
-      run: composer install --no-dev --optimize-autoloader
-
-    - name: Setup Laravel
-      run: |
-        cp .env.example .env
-        php artisan key:generate
-
-    - name: Deploy FTP
+    - name: Sincronizza files Laravel via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.2.0
       with:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         server-dir: ${{ secrets.FTP_DIR }}
+        local-dir: ./
+        exclude: |
+          vendor
+          node_modules
+          .git*
+          .github
+          storage/*.key
+          storage/logs*
+          .env
+          .env.* 
