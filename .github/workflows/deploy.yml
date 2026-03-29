@@ -5,7 +5,6 @@
     username: ${{ secrets.FTP_USERNAME }}
     password: ${{ secrets.FTP_PASSWORD }}
     server-dir: /erp/
-    dangerous-clean-slate: true
     protocol: ftp
     port: 21
     timeout: 600000
