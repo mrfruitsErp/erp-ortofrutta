@@ -12,21 +12,22 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Deploy via FTP
-      uses: SamKirkland/FTP-Deploy-Action@v4.2.0
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: /erp/
-        exclude: |
-          .git*
-          .github
-          node_modules
-          storage/*.key
-          storage/logs*
-          .env
-          .env.*
+- name: Deploy via FTP
+  uses: SamKirkland/FTP-Deploy-Action@v4.2.0
+  with:
+    server: ${{ secrets.FTP_SERVER }}
+    username: ${{ secrets.FTP_USERNAME }}
+    password: ${{ secrets.FTP_PASSWORD }}
+    server-dir: /erp/
+    dangerous-clean-slate: true
+    exclude: |
+      .git*
+      .github
+      node_modules
+      storage/*.key
+      storage/logs*
+      .env
+      .env.*
 
     - name: Clear Laravel Cache (via HTTP)
       run: |
