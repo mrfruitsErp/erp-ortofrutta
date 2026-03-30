@@ -210,6 +210,15 @@ class DocumentController extends Controller
         $pdf = Pdf::loadView('documents.pdf', [
             'document' => $document,
             'rows' => $rows
+        ])->setOptions([
+            'defaultFont'       => 'DejaVu Sans',
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled'   => false,
+            'margin_top'        => 0,
+            'margin_bottom'     => 0,
+            'margin_left'       => 0,
+            'margin_right'      => 0,
+            'dpi'               => 150,
         ]);
 
         // Imposta formato A4
