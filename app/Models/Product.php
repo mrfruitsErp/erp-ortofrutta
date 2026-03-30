@@ -13,23 +13,38 @@ class Product extends Model
         'name', 'category', 'sku', 'origin', 'vat_rate',
         'modalita_vendita', 'step_grammi',
         'price', 'cost_price',
+        'price_horeca', 'price_dettaglio', 'price_gdo',
         'pieces_per_box', 'avg_box_weight', 'tara',
         'disponibilita', 'ordine_min',
-        'ordine_min_kg', 'ordine_max',  // NEW
+        'ordine_min_kg', 'ordine_max',
     ];
 
     protected $casts = [
-        'price'          => 'decimal:2',
-        'cost_price'     => 'decimal:2',
-        'avg_box_weight' => 'decimal:3',
-        'tara'           => 'decimal:3',
-        'ordine_min'     => 'decimal:3',
-        'ordine_min_kg'  => 'decimal:3',
-        'ordine_max'     => 'decimal:3',
-        'step_grammi'    => 'integer',
-        'pieces_per_box' => 'integer',
-        'vat_rate'       => 'integer',
+        'price'           => 'decimal:2',
+        'cost_price'      => 'decimal:2',
+        'price_horeca'    => 'decimal:2',
+        'price_dettaglio' => 'decimal:2',
+        'price_gdo'       => 'decimal:2',
+        'avg_box_weight'  => 'decimal:3',
+        'tara'            => 'decimal:3',
+        'ordine_min'      => 'decimal:3',
+        'ordine_min_kg'   => 'decimal:3',
+        'ordine_max'      => 'decimal:3',
+        'step_grammi'     => 'integer',
+        'pieces_per_box'  => 'integer',
+        'vat_rate'        => 'integer',
     ];
+
+    // Restituisce il prezzo corretto in base al codice listino
+    public function getPriceForList(string $codice): float
+    {
+        return match ($codice) {
+            'horeca'    => $this->price_horeca    ?? $this->price ?? 0,
+            'dettaglio' => $this->price_dettaglio ?? $this->price ?? 0,
+            'gdo'       => $this->price_gdo       ?? $this->price ?? 0,
+            default     => $this->price ?? 0,
+        };
+    }
 
     public function getUnitaPrezzoAttribute(): string
     {
@@ -119,7 +134,8 @@ class Product extends Model
     {
         return $query->whereIn('disponibilita', ['disponibile', 'su_richiesta']);
     }
-public function stock()
+
+    public function stock()
     {
         return $this->hasOne(Stock::class);
     }

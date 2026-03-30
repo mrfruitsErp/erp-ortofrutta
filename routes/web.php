@@ -18,40 +18,16 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DeliveryZoneController;
 use App\Http\Controllers\DeliverySlotController;
 
-/*
-|--------------------------------------------------------------------------
-| HOME
-|--------------------------------------------------------------------------
-*/
-
 Route::get('/', function () {
     return redirect('/dashboard');
 });
-
-/*
-|--------------------------------------------------------------------------
-| ORDINI CLIENTE DA LINK (PUBBLICO)
-|--------------------------------------------------------------------------
-*/
 
 Route::get('/order/{token}', [OrderPublicController::class, 'index']);
 Route::post('/order/{token}', [OrderPublicController::class, 'store']);
 Route::get('/order/{token}/ordine/{id}', [OrderPublicController::class, 'showOrder']);
 
-/*
-|--------------------------------------------------------------------------
-| DASHBOARD
-|--------------------------------------------------------------------------
-*/
-
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
-
-/*
-|--------------------------------------------------------------------------
-| ERP ROUTES PROTETTE
-|--------------------------------------------------------------------------
-*/
 
 Route::middleware(['auth'])->group(function () {
 
@@ -60,6 +36,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/products/massive-update', [ProductController::class, 'massiveUpdate'])
         ->name('products.massive-update');
+
+    Route::patch('/products/{product}/inline-update', [ProductController::class, 'inlineUpdate'])
+        ->name('products.inline-update');
 
     Route::resource('products', ProductController::class);
 
@@ -115,24 +94,11 @@ Route::middleware(['auth'])->group(function () {
         ->name('movimenti.index');
 });
 
-/*
-|--------------------------------------------------------------------------
-| MIGRATE (TEMPORANEO)
-|--------------------------------------------------------------------------
-*/
-
 Route::get('/run-migrate', function () {
     Artisan::call('migrate', ['--force' => true]);
     return 'MIGRATION COMPLETATE';
 });
 
-/*
-|--------------------------------------------------------------------------
-| AUTH
-|--------------------------------------------------------------------------
-*/
-
 require __DIR__.'/auth.php';
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-

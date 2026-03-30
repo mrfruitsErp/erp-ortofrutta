@@ -6,609 +6,360 @@
 
 <div class="page-header">
     <div>
-        <div class="page-title">🧺 Prodotti</div>
-        <div class="page-sub">Catalogo prodotti e prezzi</div>
+        <div class="page-title">🛒 Prodotti</div>
+        <div class="page-sub">Catalogo prodotti e prezzi listino</div>
     </div>
-    <a href="{{ url('/products/create') }}" class="btn btn-primary">+ Nuovo Prodotto</a>
+    <div style="display:flex;gap:10px">
+        <a href="{{ url('/products/create') }}" class="btn btn-primary">+ Nuovo Prodotto</a>
+    </div>
 </div>
 
-{{-- BARRA AZIONI MASSIVE --}}
-<div id="massiveBar" style="display:none;background:var(--dark);color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:16px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
-    <span id="selectedCount" style="font-weight:700;font-size:14px">0 selezionati</span>
-
-    <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;color:rgba(255,255,255,0.7)">Prezzo +/-%</span>
-        <input type="number" id="prezzoPerc" step="0.1" placeholder="Es. +10 o -5" style="width:110px;margin:0;background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff">
-        <button onclick="massivePrezzo()" class="btn btn-primary" style="padding:7px 14px;font-size:13px">Applica Prezzo</button>
-    </div>
-
-    <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;color:rgba(255,255,255,0.7)">Costo +/-%</span>
-        <input type="number" id="costoPerc" step="0.1" placeholder="Es. +10 o -5" style="width:110px;margin:0;background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff">
-        <button onclick="massiveCosto()" class="btn btn-primary" style="padding:7px 14px;font-size:13px">Applica Costo</button>
-    </div>
-
-    <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;color:rgba(255,255,255,0.7)">Scorta Min.</span>
-        <input type="number" id="minStockVal" step="0.001" min="0" placeholder="Es. 50" style="width:110px;margin:0;background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff">
-        <button onclick="massiveMinStock()" class="btn btn-primary" style="padding:7px 14px;font-size:13px">Imposta</button>
-    </div>
-
-    <button onclick="exportCSV()" class="btn btn-secondary" style="padding:7px 14px;font-size:13px">📥 Esporta CSV</button>
-    <button onclick="deselectAll()" class="btn btn-secondary" style="padding:7px 14px;font-size:13px;margin-left:auto">✕ Deseleziona</button>
+{{-- FILTRI --}}
+<div class="card" style="padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <input type="text" id="searchInput" placeholder="🔍 Cerca per nome..." style="max-width:220px;margin:0">
+    <select id="filterOrigin" style="max-width:140px;margin:0">
+        <option value="">Tutte le origin</option>
+        @foreach($origins as $o)
+            <option value="{{ $o }}">{{ $o }}</option>
+        @endforeach
+    </select>
+    <select id="filterCat" style="max-width:160px;margin:0">
+        <option value="">Tutte le categorie</option>
+        @foreach($categories as $cat)
+            <option value="{{ $cat }}">{{ ucfirst($cat) }}</option>
+        @endforeach
+    </select>
+    <select id="filterUM" style="max-width:120px;margin:0">
+        <option value="">Tutte UM</option>
+        <option value="€/kg">€/kg</option>
+        <option value="€/collo">€/collo</option>
+        <option value="€/pz">€/pz</option>
+    </select>
+    <select id="filterDisp" style="max-width:180px;margin:0">
+        <option value="">Tutte le disponibilità</option>
+        <option value="disponibile">Disponibile</option>
+        <option value="su_richiesta">Su richiesta</option>
+        <option value="non_disponibile">Non disponibile</option>
+    </select>
+    <button onclick="resetFilters()" style="margin:0;padding:6px 12px;font-size:12px">✕ Reset</button>
+    <span id="countLabel" style="font-size:12px;color:var(--muted);margin-left:auto"></span>
 </div>
 
-<div class="card" style="padding:0;overflow:hidden">
+{{-- AZIONI MASSIVE --}}
+<div id="massiveBar" style="display:none;background:var(--green-xl);border:1px solid var(--green-l);border-radius:8px;padding:10px 16px;margin-bottom:12px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="selectedCount" style="font-size:13px;font-weight:600;color:var(--green)">0 selezionati</span>
+    <select id="massAction" style="margin:0;max-width:200px;font-size:12px">
+        <option value="">— Azione massiva —</option>
+        <option value="disp_set|disponibile">✓ Imposta disponibile</option>
+        <option value="disp_set|su_richiesta">? Imposta su richiesta</option>
+        <option value="disp_set|non_disponibile">✗ Imposta non disponibile</option>
+        <option value="price_percent|">% Modifica prezzo base %</option>
+        <option value="price_set|">€ Imposta prezzo base fisso</option>
+    </select>
+    <input type="number" id="massValue" placeholder="valore" step="0.01" style="max-width:100px;margin:0;font-size:12px;display:none">
+    <button onclick="applyMassive()" style="margin:0;padding:6px 14px;font-size:12px;background:var(--green);color:#fff;border:none;border-radius:6px;cursor:pointer">Applica</button>
+    <button onclick="deselectAll()" style="margin:0;padding:6px 10px;font-size:12px">Annulla</button>
+</div>
 
-    {{-- FILTRI --}}
-    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-        <input type="text" id="searchInput" placeholder="🔍 Cerca per nome..." style="max-width:220px;margin:0">
-        <select id="filterOrigine" style="max-width:120px;margin:0">
-            <option value="">Tutte le origini</option>
-            @foreach($products->pluck('origin')->unique()->filter()->sort() as $orig)
-                <option value="{{ $orig }}">{{ $orig }}</option>
-            @endforeach
-        </select>
-        <select id="filterCategoria" style="max-width:160px;margin:0">
-            <option value="">Tutte le categorie</option>
-            @foreach(['Frutta','Verdura','Erbe Aromatiche','Funghi','Frutta Secca','Legumi Secchi','Insalata 4a Gamma'] as $cat)
-                <option value="{{ strtolower($cat) }}">{{ $cat }}</option>
-            @endforeach
-        </select>
-        <select id="filterUM" style="max-width:100px;margin:0">
-            <option value="">Tutte UM</option>
-            @foreach($products->pluck('unit')->unique()->filter()->sort() as $um)
-                <option value="{{ $um }}">{{ $um }}</option>
-            @endforeach
-        </select>
-        <select id="filterStato" style="max-width:140px;margin:0">
-            <option value="">Tutti gli stati</option>
-            <option value="ok">✓ OK</option>
-            <option value="esaurito">⚠ Esaurito</option>
-            <option value="sottocosto">⚠ Sotto costo</option>
-        </select>
-        <select id="filterDisp" style="max-width:160px;margin:0">
-            <option value="">Tutte le disponibilità</option>
-            <option value="disponibile">✅ Disponibile</option>
-            <option value="su_richiesta">🔶 Su richiesta</option>
-            <option value="non_disponibile">❌ Non disponibile</option>
-        </select>
-        <button onclick="resetFiltri()" class="btn btn-secondary" style="padding:7px 14px;font-size:13px">✕ Reset</button>
-        <span id="countLabel" style="font-size:12px;color:var(--muted);margin-left:auto"></span>
-    </div>
-
-    <table id="productsTable">
-        <thead>
-            <tr>
-                <th style="width:40px;text-align:center">
-                    <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
-                </th>
-                <th style="cursor:pointer" onclick="sortTable(1)">Nome ↕</th>
-                <th style="text-align:center;width:75px">SKU</th>
-                <th style="width:110px">Categoria</th>
-                <th style="cursor:pointer" onclick="sortTable(4)">Origine ↕</th>
-                <th>UM</th>
-                <th style="text-align:right;cursor:pointer" onclick="sortTable(4)">Tara ↕</th>
-                <th style="text-align:right;cursor:pointer" onclick="sortTable(5)">Peso Cassa ↕</th>
-                <th style="text-align:right;cursor:pointer" onclick="sortTable(6)">Costo ↕</th>
-                <th style="text-align:right;cursor:pointer" onclick="sortTable(7)">Prezzo ↕</th>
-                <th style="text-align:right;cursor:pointer" onclick="sortTable(8)">Margine ↕</th>
-                <th style="text-align:right;cursor:pointer" onclick="sortTable(9)">Stock ↕</th>
-                <th style="text-align:center">Stato</th>
-                <th style="text-align:center;width:90px">Disponib.</th>
-                <th style="text-align:center;width:80px">Modalità</th>
-                <th style="text-align:center;width:100px">Azioni</th>
-            </tr>
-        </thead>
-        <tbody>
-        @forelse($products as $product)
-
-        @php
-            $cost      = $product->cost_price ?? 0;
-            $price     = $product->price ?? 0;
-            $margin    = $price > 0 ? (($price - $cost) / $price) * 100 : 0;
-            $stock_qty = $product->stock->quantity ?? 0;
-            if ($stock_qty <= 0) $stato = 'esaurito';
-            elseif ($price < $cost) $stato = 'sottocosto';
-            else $stato = 'ok';
-            $disp     = $product->disponibilita ?? 'disponibile';
-            $ordStep  = $product->ordine_step   ?? 'colli';
-            $stepLabels = [
-                'colli'        => ['label' => 'COLLI', 'bg' => '#e3f0ff', 'color' => '#1a56a0'],
-                'mezzo_collo'  => ['label' => '½COLL', 'bg' => '#e3f0ff', 'color' => '#1a56a0'],
-                'kg'           => ['label' => 'KG',    'bg' => '#f0faf4', 'color' => '#2d6a4f'],
-                'grammi'       => ['label' => 'GR',    'bg' => '#fef9c3', 'color' => '#854d0e'],
-                'pezzi_interi' => ['label' => 'PZ',    'bg' => '#fce7f3', 'color' => '#9d174d'],
-            ];
-            $sl = $stepLabels[$ordStep] ?? ['label' => $ordStep, 'bg' => '#f3f4f6', 'color' => '#555'];
-        @endphp
-
-        <tr class="product-row"
-            data-id="{{ $product->id }}"
-            data-name="{{ $product->name }}"
-            data-cost="{{ $cost }}"
-            data-price="{{ $price }}"
-            data-unit="{{ $product->unit ?? 'kg' }}"
-            data-stock="{{ $stock_qty }}"
-            data-name-lower="{{ strtolower($product->name) }}"
-            data-origine="{{ strtolower($product->origin ?? '') }}"
-            data-um="{{ strtolower($product->unit ?? 'kg') }}"
-            data-stato="{{ $stato }}"
-            data-disp="{{ $disp }}"
-            data-categoria="{{ strtolower($product->category ?? '') }}">
-
-            <td style="text-align:center">
-                <input type="checkbox" class="row-check" data-id="{{ $product->id }}" onchange="updateSelection()">
-            </td>
-            <td style="font-weight:700;color:var(--dark)">{{ $product->name }}</td>
-            <td style="text-align:center">
-                <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;
-                    background:#f0f4f1;border:1px solid #c3e6cb;padding:2px 7px;border-radius:6px;color:#2d6a4f">
-                    {{ $product->sku ?? '—' }}
-                </span>
-            </td>
-            <td style="font-size:12px;color:var(--muted)">{{ $product->category ?? '—' }}</td>
-            <td style="color:var(--muted);font-size:13px">{{ $product->origin ?? '—' }}</td>
-            <td>
-                <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600">
-                    {{ $product->unit ?? 'kg' }}
-                </span>
-            </td>
-            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px" data-val="{{ $product->tara ?? 0 }}">
-                {{ number_format($product->tara ?? 0, 3, ',', '.') }} kg
-            </td>
-            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px" data-val="{{ $product->avg_box_weight ?? 0 }}">
-                {{ number_format($product->avg_box_weight ?? 0, 3, ',', '.') }} kg
-            </td>
-            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px" data-val="{{ $cost }}">
-                € {{ number_format($cost, 2, ',', '.') }}
-            </td>
-            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer"
-                data-val="{{ $price }}"
-                title="Clicca per modificare il prezzo"
-                onclick="startEditPrice(this, {{ $product->id }})">
-                <span class="price-display">€ {{ number_format($price, 2, ',', '.') }}</span>
-            </td>
-            <td style="text-align:right" data-val="{{ $margin }}">
-                <span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;
-                    background:{{ $margin >= 15 ? 'var(--green-xl)' : '#fde8e8' }};
-                    color:{{ $margin >= 15 ? 'var(--green)' : '#c0392b' }}">
-                    {{ number_format($margin, 1, ',', '.') }}%
-                </span>
-            </td>
-            <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer"
-                data-val="{{ $stock_qty }}"
-                title="Clicca per modificare lo stock"
-                onclick="startEditStock(this, {{ $product->id }})">
-                <span class="stock-display">{{ number_format($stock_qty, 2, ',', '.') }} kg</span>
-            </td>
-            <td style="text-align:center">
-                @if($stato == 'esaurito')
-                    <span style="background:#fde8e8;color:#c0392b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">⚠ Esaurito</span>
-                @elseif($stato == 'sottocosto')
-                    <span style="background:#fff3e0;color:#e65100;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">⚠ Sotto costo</span>
-                @else
-                    <span style="background:var(--green-xl);color:var(--green);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">✓ OK</span>
-                @endif
-            </td>
-
-            {{-- DISPONIBILITÀ — click per ciclare tra stati --}}
-            <td style="text-align:center;cursor:pointer"
-                onclick="toggleDisponibilita(this, {{ $product->id }})"
-                data-disp="{{ $disp }}"
-                title="Clicca per cambiare disponibilità">
-                @if($disp == 'disponibile')
-                    <span class="disp-badge" style="background:#d4edda;color:#2d6a4f;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">✅ OK</span>
-                @elseif($disp == 'su_richiesta')
-                    <span class="disp-badge" style="background:#fff3e0;color:#e65100;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">🔶 Rich.</span>
-                @else
-                    <span class="disp-badge" style="background:#fde8e8;color:#c0392b;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">❌ No</span>
-                @endif
-            </td>
-
-            {{-- MODALITÀ ORDINE --}}
-            <td style="text-align:center">
-                <span style="background:{{ $sl['bg'] }};color:{{ $sl['color'] }};padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700">
-                    {{ $sl['label'] }}
-                </span>
-            </td>
-
-            <td style="text-align:center">
-                <a href="{{ url('/products/' . $product->id . '/edit') }}" class="btn btn-secondary" style="padding:5px 12px;font-size:12px">✏️ Modifica</a>
-            </td>
-        </tr>
-
-        @empty
+{{-- TABELLA --}}
+<div class="card" style="padding:0;overflow-x:auto">
+<table id="prodTable" style="table-layout:auto;width:100%;min-width:1100px">
+    <thead>
         <tr>
-            <td colspan="12" style="text-align:center;padding:40px;color:var(--muted)">
-                Nessun prodotto ancora. <a href="{{ url('/products/create') }}">Aggiungi il primo →</a>
-            </td>
+            <th style="width:32px"><input type="checkbox" id="checkAll" onchange="toggleAll(this.checked)"></th>
+            <th>Nome / SKU / Origine</th>
+            <th style="width:75px;text-align:right">Costo</th>
+            <th style="width:80px;text-align:right" title="Prezzo base">Base €</th>
+            <th style="width:80px;text-align:right;color:#2980b9" title="HoReCa">HoReCa €</th>
+            <th style="width:80px;text-align:right;color:#27ae60" title="Dettaglio">Dett. €</th>
+            <th style="width:80px;text-align:right;color:#8e44ad" title="GDO">GDO €</th>
+            <th style="width:70px;text-align:center">Margine</th>
+            <th style="width:80px;text-align:right">Stock</th>
+            <th style="width:80px;text-align:center">Disp.</th>
+            <th style="width:65px;text-align:center">Modalità</th>
+            <th style="width:60px;text-align:center">Stato</th>
+            <th style="width:90px;text-align:center">Azioni</th>
         </tr>
-        @endforelse
-        </tbody>
-    </table>
+    </thead>
+    <tbody>
+    @forelse($products as $p)
+    @php
+        $price     = $p->price ?? 0;
+        $cost      = $p->cost_price ?? 0;
+        $margine   = $price > 0 ? round((($price - $cost) / $price) * 100, 1) : 0;
+        $margColor = $margine >= 40 ? '#27ae60' : ($margine >= 20 ? '#f39c12' : '#e74c3c');
+        $stock     = $p->stock;
+        $stockQty  = $stock ? $stock->quantity : 0;
+        $minStock  = $stock ? $stock->min_stock : 0;
+        $stockOk   = $stockQty > $minStock;
+    @endphp
+    <tr class="prod-row"
+        data-id="{{ $p->id }}"
+        data-nome="{{ strtolower($p->name) }}"
+        data-cat="{{ $p->category }}"
+        data-origin="{{ $p->origin }}"
+        data-um="{{ $p->unita_prezzo }}"
+        data-disp="{{ $p->disponibilita }}">
 
+        {{-- CHECKBOX --}}
+        <td><input type="checkbox" class="row-check" value="{{ $p->id }}" onchange="updateSelected()"></td>
+
+        {{-- NOME / SKU / ORIGINE --}}
+        <td>
+            <div style="font-weight:600;font-size:13px">{{ $p->name }}</div>
+            <div style="display:flex;gap:6px;margin-top:2px;align-items:center">
+                <span style="background:var(--green-xl);color:var(--green);font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace">{{ $p->sku }}</span>
+                <span class="editable" data-field="origin" data-id="{{ $p->id }}"
+                    style="cursor:pointer;font-size:11px;color:var(--muted);border-bottom:1px dashed var(--border)">
+                    {{ $p->origin ?? '—' }}
+                </span>
+            </div>
+        </td>
+
+        {{-- COSTO --}}
+        <td style="text-align:right">
+            <span class="editable price-cell" data-field="cost_price" data-id="{{ $p->id }}"
+                style="cursor:pointer;font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px dashed var(--border)">
+                {{ number_format($cost, 2) }}
+            </span>
+        </td>
+
+        {{-- PREZZO BASE --}}
+        <td style="text-align:right">
+            <span class="editable price-cell" data-field="price" data-id="{{ $p->id }}"
+                style="cursor:pointer;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#e67e22;border-bottom:1px dashed #e67e22">
+                {{ number_format($price, 2) }}
+            </span>
+        </td>
+
+        {{-- HORECA --}}
+        <td style="text-align:right">
+            <span class="editable price-cell" data-field="price_horeca" data-id="{{ $p->id }}"
+                style="cursor:pointer;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:#2980b9;border-bottom:1px dashed #2980b9">
+                {{ number_format($p->price_horeca ?? $price, 2) }}
+            </span>
+        </td>
+
+        {{-- DETTAGLIO --}}
+        <td style="text-align:right">
+            <span class="editable price-cell" data-field="price_dettaglio" data-id="{{ $p->id }}"
+                style="cursor:pointer;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:#27ae60;border-bottom:1px dashed #27ae60">
+                {{ number_format($p->price_dettaglio ?? $price, 2) }}
+            </span>
+        </td>
+
+        {{-- GDO --}}
+        <td style="text-align:right">
+            <span class="editable price-cell" data-field="price_gdo" data-id="{{ $p->id }}"
+                style="cursor:pointer;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:#8e44ad;border-bottom:1px dashed #8e44ad">
+                {{ number_format($p->price_gdo ?? $price, 2) }}
+            </span>
+        </td>
+
+        {{-- MARGINE --}}
+        <td style="text-align:center">
+            <span style="background:{{ $margColor }}22;color:{{ $margColor }};padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700">
+                {{ $margine }}%
+            </span>
+        </td>
+
+        {{-- STOCK --}}
+        <td style="text-align:right;font-size:12px;font-family:'DM Mono',monospace;color:{{ $stockOk ? 'var(--dark)' : '#e74c3c' }}">
+            {{ number_format($stockQty, 2) }}<br>
+            <span style="font-size:10px;color:var(--muted)">{{ $p->unita_stock }}</span>
+        </td>
+
+        {{-- DISPONIBILITÀ --}}
+        <td style="text-align:center">
+            @if($p->disponibilita === 'disponibile')
+                <span style="background:#eafaf1;color:#27ae60;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">✓ OK</span>
+            @elseif($p->disponibilita === 'su_richiesta')
+                <span style="background:#fef9e7;color:#f39c12;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">SR</span>
+            @else
+                <span style="background:#fdedec;color:#e74c3c;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">✗ No</span>
+            @endif
+        </td>
+
+        {{-- MODALITÀ --}}
+        <td style="text-align:center">
+            <span style="font-size:10px;background:var(--bg);color:var(--muted);padding:2px 6px;border-radius:8px">
+                {{ $p->modalita_vendita }}
+            </span>
+        </td>
+
+        {{-- STATO --}}
+        <td style="text-align:center">
+            @if($stockOk)
+                <span style="color:#27ae60;font-size:16px">✓</span><br>
+                <span style="font-size:10px;color:#27ae60">OK</span>
+            @else
+                <span style="color:#e74c3c;font-size:16px">✗</span><br>
+                <span style="font-size:10px;color:#e74c3c">{{ $stockQty <= 0 ? 'Esaurito' : 'Basso' }}</span>
+            @endif
+        </td>
+
+        {{-- AZIONI --}}
+        <td style="text-align:center;white-space:nowrap">
+            <a href="{{ url('/products/'.$p->id.'/edit') }}"
+               style="font-size:11px;background:var(--green-xl);color:var(--green);padding:3px 8px;border-radius:6px;text-decoration:none;font-weight:600">
+                Modifica
+            </a>
+        </td>
+
+    </tr>
+    @empty
+    <tr><td colspan="13" style="text-align:center;padding:48px;color:var(--muted)">Nessun prodotto trovato.</td></tr>
+    @endforelse
+    </tbody>
+</table>
+</div>
+
+{{-- LEGENDA --}}
+<div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--muted);flex-wrap:wrap">
+    <span>💡 Clicca su qualsiasi prezzo o origine per modificarlo inline — TAB per passare al campo successivo</span>
+    <span style="color:#e67e22">■ Base</span>
+    <span style="color:#2980b9">■ HoReCa</span>
+    <span style="color:#27ae60">■ Dettaglio</span>
+    <span style="color:#8e44ad">■ GDO</span>
 </div>
 
 <script>
-const csrfToken = '{{ csrf_token() }}';
-let sortDir = {};
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-// ─── SELEZIONE ───────────────────────────────────────────
-function getSelected() {
-    return Array.from(document.querySelectorAll('.row-check:checked')).map(c => c.dataset.id);
-}
+// FILTRI
+const searchInput  = document.getElementById('searchInput');
+const filterOrigin = document.getElementById('filterOrigin');
+const filterCat    = document.getElementById('filterCat');
+const filterUM     = document.getElementById('filterUM');
+const filterDisp   = document.getElementById('filterDisp');
+const countLabel   = document.getElementById('countLabel');
 
-function updateSelection() {
-    const ids = getSelected();
-    const bar = document.getElementById('massiveBar');
-    bar.style.display = ids.length > 0 ? 'flex' : 'none';
-    document.getElementById('selectedCount').textContent = ids.length + ' selezionati';
-}
-
-function toggleAll(cb) {
-    document.querySelectorAll('.product-row:not([style*="display: none"]) .row-check').forEach(c => c.checked = cb.checked);
-    updateSelection();
-}
-
-function deselectAll() {
-    document.querySelectorAll('.row-check').forEach(c => c.checked = false);
-    document.getElementById('selectAll').checked = false;
-    updateSelection();
-}
-
-// ─── AGGIORNA PREZZO % ───────────────────────────────────
-function massivePrezzo() {
-    const perc = parseFloat(document.getElementById('prezzoPerc').value);
-    if (isNaN(perc)) { alert('Inserisci una percentuale valida'); return; }
-    const ids = getSelected();
-    if (!ids.length) return;
-
-    fetch('/products/massive-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify({ ids, action: 'price_percent', value: perc })
-    }).then(r => r.json()).then(d => {
-        if (d.success) { location.reload(); }
-        else alert('Errore: ' + d.message);
-    });
-}
-
-// ─── AGGIORNA COSTO % ────────────────────────────────────
-function massiveCosto() {
-    const perc = parseFloat(document.getElementById('costoPerc').value);
-    if (isNaN(perc)) { alert('Inserisci una percentuale valida'); return; }
-    const ids = getSelected();
-    if (!ids.length) return;
-
-    fetch('/products/massive-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify({ ids, action: 'cost_percent', value: perc })
-    }).then(r => r.json()).then(d => {
-        if (d.success) { location.reload(); }
-        else alert('Errore: ' + d.message);
-    });
-}
-
-// ─── IMPOSTA SCORTA MINIMA ───────────────────────────────
-function massiveMinStock() {
-    const val = parseFloat(document.getElementById('minStockVal').value);
-    if (isNaN(val) || val < 0) { alert('Inserisci un valore valido'); return; }
-    const ids = getSelected();
-    if (!ids.length) return;
-
-    fetch('/products/massive-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify({ ids, action: 'min_stock', value: val })
-    }).then(r => r.json()).then(d => {
-        if (d.success) { location.reload(); }
-        else alert('Errore: ' + d.message);
-    });
-}
-
-// ─── ESPORTA CSV ─────────────────────────────────────────
-function exportCSV() {
-    const ids = getSelected();
-    const rows = ids.length > 0
-        ? Array.from(document.querySelectorAll('.product-row')).filter(r => ids.includes(r.dataset.id))
-        : Array.from(document.querySelectorAll('.product-row:not([style*="display: none"])'));
-
-    const headers = ['Nome','Origine','UM','Tara','Peso Cassa','Costo','Prezzo','Margine%','Stock'];
-    const lines   = [headers.join(';')];
-
-    rows.forEach(r => {
-        lines.push([
-            r.dataset.name,
-            r.dataset.origine,
-            r.dataset.unit,
-            r.dataset.cost,
-            r.dataset.price,
-            r.dataset.stock,
-        ].join(';'));
-    });
-
-    // Usa tutti i data attributes disponibili
-    const csvRows = [['Nome','Origine','UM','Costo','Prezzo','Stock'].join(';')];
-    rows.forEach(r => {
-        csvRows.push([
-            '"' + r.dataset.name + '"',
-            r.dataset.origine || '',
-            r.dataset.um || '',
-            r.dataset.cost || '',
-            r.dataset.price || '',
-            r.dataset.stock || '',
-        ].join(';'));
-    });
-
-    const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'prodotti_' + new Date().toISOString().slice(0,10) + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-// ─── FILTRI ──────────────────────────────────────────────
 function filterRows() {
-    const q         = document.getElementById('searchInput').value.toLowerCase();
-    const origine   = document.getElementById('filterOrigine').value.toLowerCase();
-    const um        = document.getElementById('filterUM').value.toLowerCase();
-    const stato     = document.getElementById('filterStato').value;
-    const disp      = document.getElementById('filterDisp').value;
-    const categoria = document.getElementById('filterCategoria').value.toLowerCase();
-    let visible     = 0;
-
-    document.querySelectorAll('.product-row').forEach(row => {
-        const match =
-            (!q         || row.dataset.nameLower.includes(q)) &&
-            (!origine   || row.dataset.origine === origine) &&
-            (!um        || row.dataset.um === um) &&
-            (!stato     || row.dataset.stato === stato) &&
-            (!disp      || row.dataset.disp === disp) &&
-            (!categoria || row.dataset.categoria === categoria);
-        row.style.display = match ? '' : 'none';
-        if (match) visible++;
+    const q = searchInput.value.toLowerCase();
+    const o = filterOrigin.value;
+    const c = filterCat.value;
+    const u = filterUM.value;
+    const d = filterDisp.value;
+    let n = 0;
+    document.querySelectorAll('.prod-row').forEach(row => {
+        const ok = (!q || row.dataset.nome.includes(q))
+                && (!o || row.dataset.origin === o)
+                && (!c || row.dataset.cat === c)
+                && (!u || row.dataset.um === u)
+                && (!d || row.dataset.disp === d);
+        row.style.display = ok ? '' : 'none';
+        if (ok) n++;
     });
-
-    document.getElementById('countLabel').textContent = visible + ' prodotti';
+    countLabel.textContent = n + ' prodotti';
 }
-
-function resetFiltri() {
-    document.getElementById('searchInput').value     = '';
-    document.getElementById('filterOrigine').value   = '';
-    document.getElementById('filterUM').value        = '';
-    document.getElementById('filterStato').value     = '';
-    document.getElementById('filterDisp').value      = '';
-    document.getElementById('filterCategoria').value = '';
+function resetFilters() {
+    searchInput.value = '';
+    filterOrigin.value = '';
+    filterCat.value = '';
+    filterUM.value = '';
+    filterDisp.value = '';
     filterRows();
 }
-
-// ─── ORDINAMENTO ─────────────────────────────────────────
-function sortTable(colIdx) {
-    const tbody = document.querySelector('#productsTable tbody');
-    const rows  = Array.from(tbody.querySelectorAll('.product-row'));
-    sortDir[colIdx] = !sortDir[colIdx];
-
-    rows.sort((a, b) => {
-        const aCell = a.cells[colIdx];
-        const bCell = b.cells[colIdx];
-        const aVal  = aCell.dataset.val !== undefined ? parseFloat(aCell.dataset.val) : aCell.textContent.trim().toLowerCase();
-        const bVal  = bCell.dataset.val !== undefined ? parseFloat(bCell.dataset.val) : bCell.textContent.trim().toLowerCase();
-
-        if (!isNaN(aVal) && !isNaN(bVal)) return sortDir[colIdx] ? aVal - bVal : bVal - aVal;
-        return sortDir[colIdx] ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
-    });
-
-    rows.forEach(r => tbody.appendChild(r));
-}
-
-document.getElementById('searchInput').addEventListener('input', filterRows);
-document.getElementById('filterOrigine').addEventListener('change', filterRows);
-document.getElementById('filterUM').addEventListener('change', filterRows);
-document.getElementById('filterStato').addEventListener('change', filterRows);
-document.getElementById('filterDisp').addEventListener('change', filterRows);
-document.getElementById('filterCategoria').addEventListener('change', filterRows);
-
+[searchInput, filterOrigin, filterCat, filterUM, filterDisp].forEach(el => el.addEventListener('input', filterRows));
+[filterOrigin, filterCat, filterUM, filterDisp].forEach(el => el.addEventListener('change', filterRows));
 filterRows();
 
-// ─── TOGGLE DISPONIBILITÀ ────────────────────────────────
-const dispCycle = ['disponibile', 'su_richiesta', 'non_disponibile'];
-const dispConfig = {
-    'disponibile':     { label: '✅ OK',    bg: '#d4edda', color: '#2d6a4f' },
-    'su_richiesta':    { label: '🔶 Rich.', bg: '#fff3e0', color: '#e65100' },
-    'non_disponibile': { label: '❌ No',    bg: '#fde8e8', color: '#c0392b' },
-};
-
-function toggleDisponibilita(cell, productId) {
-    const current = cell.dataset.disp || 'disponibile';
-    const nextIdx = (dispCycle.indexOf(current) + 1) % dispCycle.length;
-    const next    = dispCycle[nextIdx];
-    const cfg     = dispConfig[next];
-
-    cell.style.opacity = '0.5';
-
-    fetch('/products/massive-update', {
+// SELEZIONE MULTIPLA
+function toggleAll(checked) {
+    document.querySelectorAll('.row-check').forEach(cb => cb.checked = checked);
+    updateSelected();
+}
+function deselectAll() {
+    document.getElementById('checkAll').checked = false;
+    toggleAll(false);
+}
+function updateSelected() {
+    const sel = [...document.querySelectorAll('.row-check:checked')];
+    const bar = document.getElementById('massiveBar');
+    document.getElementById('selectedCount').textContent = sel.length + ' selezionati';
+    bar.style.display = sel.length > 0 ? 'flex' : 'none';
+}
+document.getElementById('massAction').addEventListener('change', function() {
+    const needsVal = this.value.includes('percent|') || this.value.includes('set|') && !this.value.includes('disp_set');
+    document.getElementById('massValue').style.display = needsVal ? '' : 'none';
+});
+async function applyMassive() {
+    const ids    = [...document.querySelectorAll('.row-check:checked')].map(cb => cb.value);
+    const raw    = document.getElementById('massAction').value;
+    if (!raw || ids.length === 0) return;
+    const [action, val] = raw.split('|');
+    const value  = val || document.getElementById('massValue').value;
+    const res = await fetch('/products/massive-update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify({ ids: [String(productId)], action: 'disp_set', value: next })
-    })
-    .then(r => r.json())
-    .then(d => {
-        if (d.success) {
-            cell.dataset.disp = next;
-            // Aggiorna anche data-disp sulla riga
-            cell.closest('tr').dataset.disp = next;
-            const badge = cell.querySelector('.disp-badge');
-            if (badge) {
-                badge.textContent        = cfg.label;
-                badge.style.background   = cfg.bg;
-                badge.style.color        = cfg.color;
-            }
-        } else {
-            alert('Errore nel salvataggio');
-        }
-        cell.style.opacity = '1';
-    })
-    .catch(err => {
-    console.error(err);
-    alert('Errore reale: ' + err);
-}); cell.style.opacity = '1'; });
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        body: JSON.stringify({ ids, action, value })
+    });
+    const data = await res.json();
+    if (data.success) location.reload();
+    else alert('Errore: ' + (data.message || 'operazione fallita'));
 }
 
-// ─── EDITING INLINE STOCK ────────────────────────────────
-function startEditStock(cell, productId) {
-    if (cell.querySelector('input')) return;
+// INLINE EDITING
+document.querySelectorAll('.editable').forEach(el => {
+    el.addEventListener('click', function () {
+        if (this.querySelector('input')) return;
+        const original = this.textContent.trim();
+        const field    = this.dataset.field;
+        const id       = this.dataset.id;
+        const isPrice  = this.classList.contains('price-cell');
+        const span     = this;
 
-    const currentVal = parseFloat(cell.dataset.val) || 0;
-    const display    = cell.querySelector('.stock-display');
-    display.style.display = 'none';
+        const input = document.createElement('input');
+        input.type  = isPrice ? 'number' : 'text';
+        if (isPrice) { input.step = '0.01'; input.min = '0'; }
+        input.value = isPrice ? parseFloat(original.replace(',', '.')) : original;
+        input.style.cssText = 'width:68px;text-align:right;font-family:inherit;font-size:inherit;font-weight:inherit;color:inherit;border:none;border-bottom:2px solid currentColor;background:transparent;outline:none;padding:0';
+        span.textContent = '';
+        span.appendChild(input);
+        input.focus();
+        input.select();
 
-    const input = document.createElement('input');
-    input.type  = 'number';
-    input.step  = '0.001';
-    input.value = currentVal.toFixed(3);
-    input.style.cssText = 'width:90px;text-align:right;margin:0;font-size:13px;font-family:inherit';
-    cell.appendChild(input);
-    input.focus();
-    input.select();
-
-    function saveStock() {
-        const newVal = parseFloat(input.value);
-        if (isNaN(newVal) || newVal < 0) { cancelEdit(); return; }
-        if (newVal === currentVal)        { cancelEdit(); return; }
-
-        cell.style.opacity = '0.5';
-
-        fetch('/products/massive-update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ ids: [String(productId)], action: 'stock_set', value: newVal })
-        })
-        .then(r => r.json())
-        .then(d => {
-            if (d.success) {
-                cell.dataset.val = newVal;
-                display.textContent = newVal.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' kg';
-
-                // Aggiorna stato riga
-                const row = cell.closest('tr');
-                row.dataset.stock = newVal;
-                const statoCell = row.querySelector('[data-stato]') || row.cells[10];
-                if (newVal <= 0) {
-                    row.dataset.stato = 'esaurito';
+        const save = async () => {
+            const val = input.value.trim();
+            if (val === '' || val === original) { span.textContent = original; return; }
+            span.textContent = '...';
+            try {
+                const res = await fetch(`/products/${id}/inline-update`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                    body: JSON.stringify({ field, value: val })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const display = isPrice ? parseFloat(data.value).toFixed(2) : data.value;
+                    span.textContent = display;
+                    span.style.background = '#eafaf1';
+                    setTimeout(() => span.style.background = '', 800);
+                    // aggiorna margine se prezzo base cambiato
+                    if (field === 'price' || field === 'cost_price') location.reload();
                 } else {
-                    const price = parseFloat(row.dataset.price) || 0;
-                    const cost  = parseFloat(row.dataset.cost)  || 0;
-                    row.dataset.stato = price < cost ? 'sottocosto' : 'ok';
+                    span.textContent = original;
+                    alert('Errore: ' + (data.message || 'salvataggio fallito'));
                 }
+            } catch(e) { span.textContent = original; }
+        };
 
-                cell.style.opacity  = '1';
-                cell.style.background = '#d4edda';
-                setTimeout(() => location.reload(), 600);
-            } else {
-                alert('Errore nel salvataggio');
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
+            if (e.key === 'Escape') { span.textContent = original; }
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                input.blur();
+                const row = span.closest('tr');
+                const editables = [...row.querySelectorAll('.editable')];
+                const idx = editables.indexOf(span);
+                const next = editables[idx + (e.shiftKey ? -1 : 1)];
+                if (next) setTimeout(() => next.click(), 80);
             }
-            cancelEdit();
-        })
-        .catch(err => {
-    console.error(err);
-    alert('Errore reale: ' + err);
-}); cancelEdit(); });
-    }
-
-    function cancelEdit() {
-        if (input.parentNode) input.remove();
-        display.style.display = '';
-        cell.style.opacity = '1';
-    }
-
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter')  { e.preventDefault(); saveStock(); }
-        if (e.key === 'Escape') { cancelEdit(); }
+        });
     });
-    input.addEventListener('blur', saveStock);
-}
-
-// ─── EDITING INLINE PREZZO ───────────────────────────────
-function startEditPrice(cell, productId) {
-    if (cell.querySelector('input')) return; // già in edit
-
-    const currentVal = parseFloat(cell.dataset.val) || 0;
-    const display    = cell.querySelector('.price-display');
-    display.style.display = 'none';
-
-    const input = document.createElement('input');
-    input.type  = 'number';
-    input.step  = '0.01';
-    input.value = currentVal.toFixed(2);
-    input.style.cssText = 'width:80px;text-align:right;margin:0;font-size:13px;font-weight:700;font-family:inherit';
-    cell.appendChild(input);
-    input.focus();
-    input.select();
-
-    function savePrice() {
-        const newVal = parseFloat(input.value);
-        if (isNaN(newVal) || newVal < 0) { cancelEdit(); return; }
-        if (newVal === currentVal) { cancelEdit(); return; }
-
-        cell.style.opacity = '0.5';
-
-        fetch('/products/massive-update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ ids: [String(productId)], action: 'price_set', value: newVal })
-        })
-        .then(r => r.json())
-        .then(d => {
-            if (d.success) {
-                cell.dataset.val = newVal;
-                display.textContent = '€ ' + newVal.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
-
-                // Aggiorna margine nella stessa riga
-                const row  = cell.closest('tr');
-                const cost = parseFloat(row.dataset.cost) || 0;
-                const margin = newVal > 0 ? ((newVal - cost) / newVal) * 100 : 0;
-                const marginCell = row.querySelector('[data-val]~td [data-val]') || row.cells[8];
-                if (marginCell) {
-                    marginCell.dataset.val = margin;
-                    const span = marginCell.querySelector('span');
-                    if (span) {
-                        span.textContent = margin.toLocaleString('it-IT', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%';
-                        span.style.background = margin >= 15 ? 'var(--green-xl)' : '#fde8e8';
-                        span.style.color      = margin >= 15 ? 'var(--green)'   : '#c0392b';
-                    }
-                }
-
-                row.dataset.price = newVal;
-                cell.style.opacity = '1';
-                cell.style.background = '#d4edda';
-                setTimeout(() => cell.style.background = '', 1000);
-            } else {
-                alert('Errore nel salvataggio');
-            }
-            cancelEdit();
-        })
-        .catch(err => {
-    console.error(err);
-    alert('Errore reale: ' + err);
-}); cancelEdit(); });
-    }
-
-    function cancelEdit() {
-        if (input.parentNode) input.remove();
-        display.style.display = '';
-        cell.style.opacity = '1';
-    }
-
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter')  { e.preventDefault(); savePrice(); }
-        if (e.key === 'Escape') { cancelEdit(); }
-    });
-    input.addEventListener('blur', savePrice);
-}
+});
 </script>
 
 @endsection

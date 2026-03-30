@@ -35,13 +35,16 @@ class ProductController extends Controller
 
     public function index()
     {
-        $products = Product::orderBy('name')->get();
+        $products = Product::orderBy('category')->orderBy('name')->get();
 
         foreach ($products as $product) {
             $product->stock = Stock::where('product_id', $product->id)->first();
         }
 
-        return view('products.index', compact('products'));
+        $categories = Product::distinct()->orderBy('category')->pluck('category')->filter();
+        $origins    = Product::distinct()->orderBy('origin')->pluck('origin')->filter();
+
+        return view('products.index', compact('products', 'categories', 'origins'));
     }
 
     public function create()
@@ -69,6 +72,9 @@ class ProductController extends Controller
             'pieces_per_box'    => $request->pieces_per_box ?? 0,
             'price'             => $request->price ?? 0,
             'cost_price'        => $request->cost_price ?? 0,
+            'price_horeca'      => $request->price_horeca ?? $request->price ?? 0,
+            'price_dettaglio'   => $request->price_dettaglio ?? $request->price ?? 0,
+            'price_gdo'         => $request->price_gdo ?? $request->price ?? 0,
             'vat_rate'          => $request->vat_rate ?? 4,
             'category'          => $request->category,
             'disponibilita'     => $request->disponibilita ?? 'disponibile',
@@ -111,6 +117,9 @@ class ProductController extends Controller
             'pieces_per_box'    => $request->pieces_per_box ?? 0,
             'price'             => $request->price ?? 0,
             'cost_price'        => $request->cost_price ?? 0,
+            'price_horeca'      => $request->price_horeca ?? $product->price_horeca,
+            'price_dettaglio'   => $request->price_dettaglio ?? $product->price_dettaglio,
+            'price_gdo'         => $request->price_gdo ?? $product->price_gdo,
             'vat_rate'          => $request->vat_rate ?? 4,
             'disponibilita'     => $request->disponibilita ?? 'disponibile',
             'ordine_min'        => $request->ordine_min ?? 1,
@@ -148,6 +157,27 @@ class ProductController extends Controller
 
         return redirect()->route('products.index')
             ->with('success', 'Prodotto eliminato.');
+    }
+
+    public function inlineUpdate(Request $request, Product $product)
+    {
+        $allowed = ['price', 'cost_price', 'price_horeca', 'price_dettaglio', 'price_gdo', 'origin', 'disponibilita'];
+
+        $field = $request->input('field');
+        $value = $request->input('value');
+
+        if (!in_array($field, $allowed)) {
+            return response()->json(['success' => false, 'message' => 'Campo non consentito'], 403);
+        }
+
+        $isPrice = str_starts_with($field, 'price');
+        if ($isPrice && (!is_numeric($value) || $value < 0)) {
+            return response()->json(['success' => false, 'message' => 'Prezzo non valido'], 422);
+        }
+
+        $product->update([$field => $value]);
+
+        return response()->json(['success' => true, 'value' => $product->fresh()->$field]);
     }
 
     public function massiveUpdate(Request $request)
