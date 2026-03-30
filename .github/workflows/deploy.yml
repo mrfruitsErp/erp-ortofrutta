@@ -13,15 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          tools: composer
-
-      - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -36,6 +27,7 @@ jobs:
             **/.git*
             **/.github/**
             **/node_modules/**
+            **/vendor/**
             **/storage/logs/**
             **/storage/app/**
             **/storage/framework/**
@@ -47,3 +39,7 @@ jobs:
             **/Dockerfile
             **/render.yaml
             **/.ftp-deploy-sync-state.json
+
+      - name: Trigger composer install on server
+        run: |
+          curl -s "https://erp.mrfruits.it/composer.php?key=erp_secure_2026_X9kL" || true
