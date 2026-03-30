@@ -33,3 +33,4 @@ Thumbs.db
 # Render / produzione
 .env.render
 .env.production
+.ftp-deploy-sync-state.json

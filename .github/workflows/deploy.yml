@@ -11,10 +11,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.2.0
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -22,12 +31,19 @@ jobs:
           server-dir: /erp_new/
           protocol: ftp
           port: 21
-          timeout: 600000
+          log-level: minimal
           exclude: |
-            .git*
-            .github
-            node_modules
-            storage/*.key
-            storage/logs*
-            .env
-            .env.*
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/storage/logs/**
+            **/storage/app/**
+            **/storage/framework/**
+            **/storage/*.key
+            **/.env
+            **/.env.*
+            !**/.env.example
+            **/backup_locale.sql
+            **/Dockerfile
+            **/render.yaml
+            **/.ftp-deploy-sync-state.json
