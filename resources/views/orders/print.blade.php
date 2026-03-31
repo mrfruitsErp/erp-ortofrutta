@@ -3,66 +3,129 @@
 <head>
 <meta charset="UTF-8">
 <title>Stampa Ordini — Mr. Fruits ERP</title>
+
 <style>
-/* (stile invariato, non toccato) */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #111; background: #fff; }
-/* resto CSS identico... */
+body {
+    font-family: Arial;
+    background: #e5e7eb;
+}
+
+/* CONTENITORE */
+.print-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    padding: 30px 0;
+}
+
+/* FOGLIO */
+.page {
+    width: 210mm;
+    min-height: 297mm;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    padding: 15mm;
+    transform: scale(0.9);
+    transform-origin: top center;
+}
+
+/* HEADER CONTROLLI */
+.controls {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    padding: 15px;
+    z-index: 10;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* TABELLA */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 5px;
+}
+
+th {
+    background: #f0f0f0;
+}
+
+/* MODALITÀ */
+.mode-compact .col-kg,
+.mode-compact .col-price {
+    display: none;
+}
+
+.mode-picking .col-price {
+    display: none;
+}
+
+.mode-summary tbody {
+    display: none;
+}
+
+/* STAMPA */
+@media print {
+    body {
+        background: #fff;
+    }
+
+    .controls {
+        display: none;
+    }
+
+    .page {
+        box-shadow: none;
+        transform: scale(1);
+    }
+}
 </style>
 </head>
+
 <body>
 
-<div class="screen-header">
-    <div>
-        <h1>🖨️ Anteprima Stampa Ordini</h1>
-        <div class="meta">{{ $orders->count() }} ordini · Generato il {{ date('d/m/Y H:i') }}</div>
-    </div>
+<div class="controls">
+
+    <button onclick="window.print()">🖨️ Stampa</button>
+
+    <select onchange="setMode(this.value)">
+        <option value="">Completa</option>
+        <option value="compact">Compatta</option>
+        <option value="picking">Picking</option>
+        <option value="summary">Riepilogo</option>
+    </select>
+
+    Zoom:
+    <input type="range" min="70" max="100" value="90" oninput="zoomPage(this.value)">
+
 </div>
 
-<div class="screen-controls">
-    <button onclick="window.print()" class="btn-print">🖨️ Stampa adesso</button>
-    <a href="{{ route('orders.index') }}" class="btn-back">← Torna agli ordini</a>
-</div>
+<div class="print-preview" id="preview">
 
-<div class="summary-bar">
-    <strong>{{ $orders->count() }}</strong> ordini ·
-    Totale complessivo: <strong>€ {{ number_format($orders->sum('total'), 2, ',', '.') }}</strong>
-</div>
+@foreach($orders as $order)
 
-@forelse($orders as $order)
+<div class="page">
 
-<div class="order-block">
+    <h2>Ordine {{ $order->number }}</h2>
+    <p>Data: {{ \Carbon\Carbon::parse($order->date)->format('d/m/Y') }}</p>
+    <p>Cliente: {{ $order->client->company_name ?? '-' }}</p>
 
-    <div class="order-head">
-        <div>
-            <div class="company-name">Mr. Fruits</div>
-            <div class="company-sub">Gestionale ERP</div>
-        </div>
-        <div class="order-ref">
-            <div class="number">{{ $order->number ?? 'N° mancante' }}</div>
-            <div class="date">{{ \Carbon\Carbon::parse($order->date)->format('d/m/Y') }}</div>
-        </div>
-    </div>
-
-    <hr class="divider">
-
-    <div class="info-grid">
-        <div>
-            <div class="info-label">Cliente</div>
-            <div class="info-value">{{ $order->client->company_name ?? '—' }}</div>
-        </div>
-    </div>
-
-    {{-- TABELLA PRODOTTI --}}
     <table>
         <thead>
             <tr>
                 <th>Prodotto</th>
-                <th class="center">UM</th>
-                <th class="center">Colli</th>
-                <th class="right">Kg / Pz</th>
-                <th class="right">Prezzo</th>
-                <th class="right">Totale</th>
+                <th class="col-kg">Quantità</th>
+                <th class="col-price">Prezzo</th>
+                <th>Totale</th>
             </tr>
         </thead>
 
@@ -74,30 +137,22 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color:
         @endphp
 
         <tr>
-            <td><strong>{{ $item->product->name ?? '—' }}</strong></td>
+            <td>{{ $item->product->name }}</td>
 
-            <td class="center">
-                {{ $isUnit ? 'PZ' : 'KG' }}
-            </td>
-
-            <td class="center">
-                {{ $item->colli ?? '—' }}
-            </td>
-
-            <td class="right">
+            <td class="col-kg">
                 @if(!$isUnit)
-                    {{ number_format($item->kg_net ?? 0,2,',','.') }}
+                    {{ number_format($item->kg_net ?? 0,2,',','.') }} kg
                 @else
                     {{ number_format($item->qty ?? 0,0,',','.') }} pz
                 @endif
             </td>
 
-            <td class="right">
+            <td class="col-price">
                 € {{ number_format($item->price_kg ?? $item->price ?? 0,2,',','.') }}
             </td>
 
-            <td class="right">
-                <strong>€ {{ number_format($item->total,2,',','.') }}</strong>
+            <td>
+                € {{ number_format($item->total,2,',','.') }}
             </td>
         </tr>
 
@@ -106,29 +161,30 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color:
 
         <tfoot>
             <tr>
-                <td colspan="5" class="right">Totale ordine</td>
-                <td class="right">
-                    € {{ number_format($order->total,2,',','.') }}
-                </td>
+                <td colspan="3">Totale</td>
+                <td>€ {{ number_format($order->total,2,',','.') }}</td>
             </tr>
         </tfoot>
     </table>
 
-    @if($order->notes)
-        <div class="order-notes">
-            📝 Note: {{ $order->notes }}
-        </div>
-    @endif
+</div>
+
+@endforeach
 
 </div>
 
-@empty
+<script>
+function setMode(mode) {
+    const preview = document.getElementById('preview');
+    preview.className = 'print-preview mode-' + mode;
+}
 
-<div style="padding:40px;text-align:center">
-    Nessun ordine trovato
-</div>
-
-@endforelse
+function zoomPage(val) {
+    document.querySelectorAll('.page').forEach(p => {
+        p.style.transform = 'scale(' + (val/100) + ')';
+    });
+}
+</script>
 
 </body>
 </html>
