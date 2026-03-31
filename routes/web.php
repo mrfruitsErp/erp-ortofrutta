@@ -40,6 +40,13 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/products/{product}/inline-update', [ProductController::class, 'inlineUpdate'])
         ->name('products.inline-update');
 
+    // ── Queste due route DEVONO stare PRIMA di Route::resource('products') ──
+    Route::get('/products/export', [ProductController::class, 'export'])
+        ->name('products.export');
+
+    Route::post('/products/import', [ProductController::class, 'import'])
+        ->name('products.import');
+
     Route::resource('products', ProductController::class);
 
     Route::resource('documents', DocumentController::class);

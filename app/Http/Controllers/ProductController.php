@@ -235,9 +235,288 @@ class ProductController extends Controller
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
+                'success'  => false,
+                'message'  => $e->getMessage()
             ], 500);
         }
+    }
+
+    // ── EXPORT CSV ────────────────────────────────────────
+    public function export(Request $request)
+    {
+        $products = Product::orderBy('category')->orderBy('name')->get();
+
+        foreach ($products as $product) {
+            $product->stock = Stock::where('product_id', $product->id)->first();
+        }
+
+        if ($request->filled('category')) {
+            $products = $products->where('category', $request->category);
+        }
+
+        $filename = 'prodotti_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        $columns = [
+            'SKU',
+            'Nome',
+            'Categoria',
+            'Origine',
+            'Modalità Vendita',
+            'Disponibilità',
+            'Costo (€/kg)',
+            'Prezzo Base (€/kg)',
+            'Prezzo HoReCa (€/kg)',
+            'Prezzo Dettaglio (€/kg)',
+            'Prezzo GDO (€/kg)',
+            'IVA %',
+            'Peso Medio Cassa (kg)',
+            'Tara (kg)',
+            'Pezzi per Cassa',
+            'Stock Attuale (kg)',
+            'Scorta Minima (kg)',
+            'Ordine Min',
+            'Ordine Min Kg',
+            'Ordine Max',
+        ];
+
+        $callback = function () use ($products, $columns) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($file, $columns, ';');
+
+            foreach ($products as $p) {
+                $dispMap = [
+                    'disponibile'     => 'Disponibile',
+                    'su_richiesta'    => 'Su richiesta',
+                    'non_disponibile' => 'Non disponibile',
+                ];
+                $modMap = [
+                    'cassa_kg'    => 'Cassa (kg)',
+                    'cassa_collo' => 'Cassa (collo)',
+                    'kg_liberi'   => 'Kg liberi',
+                    'pezzo'       => 'Pezzo',
+                    'peso_step'   => 'Peso step',
+                ];
+
+                fputcsv($file, [
+                    $p->sku ?? '',
+                    $p->name ?? '',
+                    $p->category ?? '',
+                    $p->origin ?? '',
+                    $modMap[$p->modalita_vendita] ?? $p->modalita_vendita ?? '',
+                    $dispMap[$p->disponibilita] ?? $p->disponibilita ?? '',
+                    number_format($p->cost_price ?? 0, 2, ',', ''),
+                    number_format($p->price ?? 0, 2, ',', ''),
+                    number_format($p->price_horeca ?? 0, 2, ',', ''),
+                    number_format($p->price_dettaglio ?? 0, 2, ',', ''),
+                    number_format($p->price_gdo ?? 0, 2, ',', ''),
+                    $p->vat_rate ?? 4,
+                    number_format($p->avg_box_weight ?? 0, 3, ',', ''),
+                    number_format($p->tara ?? 0, 3, ',', ''),
+                    $p->pieces_per_box ?? 0,
+                    number_format($p->stock?->quantity ?? 0, 3, ',', ''),
+                    number_format($p->stock?->min_stock ?? 0, 3, ',', ''),
+                    $p->ordine_min ?? '',
+                    $p->ordine_min_kg ?? '',
+                    $p->ordine_max ?? '',
+                ], ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // ── IMPORT CSV ────────────────────────────────────────
+    // Usa SKU come chiave. Aggiorna prezzi, costo, disponibilità,
+    // origine, stock, scorta min, pesi, ordine min/max.
+    // NON modifica: Nome, Categoria, Modalità Vendita (sicurezza).
+    public function import(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $path   = $request->file('csv_file')->getRealPath();
+        $handle = fopen($path, 'r');
+
+        if (!$handle) {
+            return back()->with('error', 'Impossibile leggere il file.');
+        }
+
+        // Rimuovi BOM UTF-8 se presente
+        $bom = fread($handle, 3);
+        if ($bom !== chr(0xEF) . chr(0xBB) . chr(0xBF)) {
+            rewind($handle);
+        }
+
+        // Leggi intestazione
+        $header = fgetcsv($handle, 0, ';');
+        if (!$header) {
+            fclose($handle);
+            return back()->with('error', 'File CSV vuoto o intestazione mancante.');
+        }
+
+        $header = array_map(fn($h) => trim(mb_strtolower($h)), $header);
+
+        // Indici colonne
+        $col = [
+            'sku'             => array_search('sku', $header),
+            'origin'          => array_search('origine', $header),
+            'disponibilita'   => array_search('disponibilità', $header),
+            'cost_price'      => array_search('costo (€/kg)', $header),
+            'price'           => array_search('prezzo base (€/kg)', $header),
+            'price_horeca'    => array_search('prezzo horeca (€/kg)', $header),
+            'price_dettaglio' => array_search('prezzo dettaglio (€/kg)', $header),
+            'price_gdo'       => array_search('prezzo gdo (€/kg)', $header),
+            'vat_rate'        => array_search('iva %', $header),
+            'avg_box_weight'  => array_search('peso medio cassa (kg)', $header),
+            'tara'            => array_search('tara (kg)', $header),
+            'pieces_per_box'  => array_search('pezzi per cassa', $header),
+            'stock_qty'       => array_search('stock attuale (kg)', $header),
+            'min_stock'       => array_search('scorta minima (kg)', $header),
+            'ordine_min'      => array_search('ordine min', $header),
+            'ordine_min_kg'   => array_search('ordine min kg', $header),
+            'ordine_max'      => array_search('ordine max', $header),
+        ];
+
+        if ($col['sku'] === false) {
+            fclose($handle);
+            return back()->with('error', 'Colonna SKU non trovata. Usa il file esportato da questo sistema senza rinominare le colonne.');
+        }
+
+        $dispMap = [
+            'disponibile'     => 'disponibile',
+            'su richiesta'    => 'su_richiesta',
+            'non disponibile' => 'non_disponibile',
+        ];
+
+        // Converti numero formato italiano → float
+        $toFloat = fn($v) => (float) str_replace(',', '.', str_replace('.', '', trim($v ?? '0')));
+
+        $updated  = 0;
+        $notFound = 0;
+        $skipped  = 0;
+        $errors   = [];
+        $rowNum   = 1;
+
+        while (($data = fgetcsv($handle, 0, ';')) !== false) {
+            $rowNum++;
+            if (count($data) < 2) { $skipped++; continue; }
+
+            $sku = trim($data[$col['sku']] ?? '');
+            if (empty($sku)) { $skipped++; continue; }
+
+            $product = Product::where('sku', $sku)->first();
+            if (!$product) {
+                $notFound++;
+                $errors[] = "Riga $rowNum: SKU \"$sku\" non trovato.";
+                continue;
+            }
+
+            try {
+                $upd = [];
+
+                // Origine
+                if ($col['origin'] !== false && isset($data[$col['origin']])) {
+                    $upd['origin'] = trim($data[$col['origin']]);
+                }
+
+                // Disponibilità
+                if ($col['disponibilita'] !== false && isset($data[$col['disponibilita']])) {
+                    $raw = mb_strtolower(trim($data[$col['disponibilita']]));
+                    $upd['disponibilita'] = $dispMap[$raw] ?? $product->disponibilita;
+                }
+
+                // Prezzi numerici
+                foreach (['cost_price', 'price', 'price_horeca', 'price_dettaglio', 'price_gdo'] as $f) {
+                    if ($col[$f] !== false && isset($data[$col[$f]]) && $data[$col[$f]] !== '') {
+                        $v = $toFloat($data[$col[$f]]);
+                        if ($v >= 0) $upd[$f] = $v;
+                    }
+                }
+
+                // IVA
+                if ($col['vat_rate'] !== false && isset($data[$col['vat_rate']]) && $data[$col['vat_rate']] !== '') {
+                    $vat = (int) $data[$col['vat_rate']];
+                    if (in_array($vat, [0, 4, 5, 10, 22])) $upd['vat_rate'] = $vat;
+                }
+
+                // Pesi
+                foreach (['avg_box_weight', 'tara'] as $f) {
+                    if ($col[$f] !== false && isset($data[$col[$f]]) && $data[$col[$f]] !== '') {
+                        $upd[$f] = $toFloat($data[$col[$f]]);
+                    }
+                }
+
+                // Pezzi per cassa
+                if ($col['pieces_per_box'] !== false && isset($data[$col['pieces_per_box']]) && $data[$col['pieces_per_box']] !== '') {
+                    $upd['pieces_per_box'] = (int) $data[$col['pieces_per_box']];
+                }
+
+                // Ordini
+                foreach (['ordine_min', 'ordine_max'] as $f) {
+                    if ($col[$f] !== false && isset($data[$col[$f]]) && $data[$col[$f]] !== '') {
+                        $upd[$f] = (int) $data[$col[$f]];
+                    }
+                }
+                if ($col['ordine_min_kg'] !== false && isset($data[$col['ordine_min_kg']]) && $data[$col['ordine_min_kg']] !== '') {
+                    $upd['ordine_min_kg'] = $toFloat($data[$col['ordine_min_kg']]);
+                }
+
+                if (!empty($upd)) $product->update($upd);
+
+                // Stock
+                $doStock = false;
+                $newQty  = null;
+                $newMin  = null;
+
+                if ($col['stock_qty'] !== false && isset($data[$col['stock_qty']]) && $data[$col['stock_qty']] !== '') {
+                    $newQty  = $toFloat($data[$col['stock_qty']]);
+                    $doStock = true;
+                }
+                if ($col['min_stock'] !== false && isset($data[$col['min_stock']]) && $data[$col['min_stock']] !== '') {
+                    $newMin  = $toFloat($data[$col['min_stock']]);
+                    $doStock = true;
+                }
+
+                if ($doStock) {
+                    $stock = Stock::firstOrCreate(
+                        ['product_id' => $product->id],
+                        ['quantity' => 0, 'min_stock' => 0]
+                    );
+                    if ($newQty !== null) $stock->quantity  = $newQty;
+                    if ($newMin !== null) $stock->min_stock = $newMin;
+                    $stock->save();
+                }
+
+                $updated++;
+
+            } catch (\Exception $e) {
+                $errors[] = "Riga $rowNum (SKU $sku): " . $e->getMessage();
+            }
+        }
+
+        fclose($handle);
+
+        $msg  = "✓ $updated prodotti aggiornati";
+        if ($notFound > 0) $msg .= " · $notFound SKU non trovati";
+        if ($skipped  > 0) $msg .= " · $skipped righe saltate";
+        if (!empty($errors)) {
+            $msg .= ' · Errori: ' . implode(' | ', array_slice($errors, 0, 3));
+            if (count($errors) > 3) $msg .= ' (e altri ' . (count($errors) - 3) . ')';
+        }
+
+        $sessionType = empty($errors) && $notFound === 0 ? 'success' : 'warning';
+        return redirect()->route('products.index')->with($sessionType, $msg);
     }
 }
