@@ -36,14 +36,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/products/massive-update', [ProductController::class, 'massiveUpdate'])
         ->name('products.massive-update');
-
     Route::patch('/products/{product}/inline-update', [ProductController::class, 'inlineUpdate'])
         ->name('products.inline-update');
 
-    // ── Queste due route DEVONO stare PRIMA di Route::resource('products') ──
+    // ── Prodotti export/import — PRIMA di Route::resource ──
     Route::get('/products/export', [ProductController::class, 'export'])
         ->name('products.export');
-
     Route::post('/products/import', [ProductController::class, 'import'])
         ->name('products.import');
 
@@ -53,21 +51,29 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/documents/{id}/pdf', [DocumentController::class, 'pdf'])
         ->name('documents.pdf');
-
     Route::post('/save-real-weight', [DocumentController::class, 'saveRealWeight'])
         ->name('save.real.weight');
-
     Route::get('/documents/{id}/assign-number', [DocumentController::class, 'assignDdtNumber'])
         ->name('documents.assignNumber');
-
     Route::get('/documents/{id}/cancel', [DocumentController::class, 'cancelDdt'])
         ->name('documents.cancel');
 
     Route::get('/orders/{order}/confirm', [OrderController::class, 'confirmOrder'])
         ->name('orders.confirm');
-
     Route::get('/orders/{order}/generate-document', [OrderController::class, 'generateDocument'])
         ->name('orders.generateDocument');
+
+    // ── Ordini: tutte le route custom PRIMA di Route::resource ──
+    Route::get('/orders/print',                  [OrderController::class, 'printView'])
+        ->name('orders.print');
+    Route::get('/orders/export',                 [OrderController::class, 'exportOrders'])
+        ->name('orders.export');
+    Route::get('/orders/export-items',           [OrderController::class, 'exportOrderItems'])
+        ->name('orders.export-items');
+    Route::get('/orders/export-product-summary', [OrderController::class, 'exportProductSummary'])
+        ->name('orders.export-product-summary');
+    Route::post('/orders/massive-action',        [OrderController::class, 'massiveAction'])
+        ->name('orders.massive-action');
 
     Route::resource('orders', OrderController::class);
 
@@ -88,12 +94,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
-
     Route::get('/crediti', [PaymentController::class, 'crediti'])->name('crediti.index');
 
     Route::get('/magazzino', [StockController::class, 'index'])->name('magazzino.index');
     Route::get('/carico-magazzino', [StockController::class, 'create'])->name('carico.magazzino');
-
     Route::post('/stock/bulk', [StockController::class, 'bulkStore'])->name('stock.bulk.store');
     Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
 
