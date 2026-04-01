@@ -6,9 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class DeliveryTimeSlot extends Model
 {
-    protected $fillable = ['nome', 'orario_inizio', 'orario_fine', 'attivo', 'ordine'];
+    protected $fillable = [
+        'nome',
+        'orario_inizio',
+        'orario_fine',
+        'attivo',
+        'ordine',
+        'max_orders' // 🔥 AGGIUNTO
+    ];
 
-    protected $casts = ['attivo' => 'boolean'];
+    protected $casts = [
+        'attivo' => 'boolean'
+    ];
 
     public function getLabelAttribute(): string
     {
